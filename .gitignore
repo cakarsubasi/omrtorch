@@ -1,0 +1,17 @@
+# Python build files
+__pycache__/
+
+# VS Code configuration
+.vscode/
+
+# pytorch saved models
+*.pt
+
+# Downloaded intermediate files
+*.zip
+
+# Torchvision directory
+vision/
+
+# Muscima dataset directory
+muscima/
