@@ -13,12 +13,13 @@ class MuscimaMeasures(Dataset):
   Class for constructing a dataset object for system measure,
   stave measure, and stave detection on the Muscima++ dataset
   '''
-  def __init__(self, imagepath, annotationpath, transforms=None):
+  def __init__(self, imagepath, annotationpath, label_list=None, transforms=None):
     self.imgpath = imagepath
     self.annpath = annotationpath
 
     self.imgs = list(sorted(os.listdir(imagepath)))
     self.anns = list(sorted(os.listdir(annotationpath)))
+    self.label_list = getMeasureLabels() if label_list is None else label_list
 
     self.transforms = transforms
 
@@ -39,9 +40,7 @@ class MuscimaMeasures(Dataset):
       width = annotations['width']
       height = annotations['height']
     
-      objectlabels = ['system_measures', 'stave_measures', 'staves']
-    
-      for idx, label in enumerate(objectlabels):
+      for idx, label in enumerate(self.label_list):
         objs = annotations[label]
         for i in range(len(objs)):
           xbox = np.asarray([objs[i]['left'], objs[i]['right']])
@@ -72,3 +71,29 @@ class MuscimaMeasures(Dataset):
 
     return image, target
 
+def getMeasureLabels(system_measures=True, stave_measures=True, staves=False):
+  '''
+  Generates a class map for the measures dataset
+  By default returns system measures and stave measures only
+  system_measures: bounding boxes for system measures
+  stave_measures: bounding boxes for staff measures
+  staves: bounding boxes for whole staves
+  '''
+  label_map = []
+  if system_measures:
+    label_map.append('system_measures')
+  if stave_measures:
+    label_map.append('stave_measures')
+  if staves:
+    label_map.append('staves')
+  return label_map
+
+def getListofClassNames(labels, label_strs):
+  '''
+  Converts ordered list of numerical labels
+  into ordered strings of labels for visualization purposes
+  '''
+  class_names = []
+  for label in labels:
+      class_names.append(label_strs[label-1])
+  return class_names 
