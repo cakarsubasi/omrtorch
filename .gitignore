@@ -1,6 +1,9 @@
 # Python build files
 __pycache__/
 
+# PyCharm project files
+.idea
+
 # VS Code configuration
 .vscode/
 
