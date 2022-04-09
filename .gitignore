@@ -14,6 +14,7 @@ __pycache__/
 *.zip
 
 # Torchvision directory
+vision0.8.2/
 vision/
 
 # Muscima dataset directory
