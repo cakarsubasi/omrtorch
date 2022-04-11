@@ -4,6 +4,9 @@ __pycache__/
 # PyCharm project files
 .idea
 
+# Jupyter autosaves
+.ipynb_checkpoints/
+
 # VS Code configuration
 .vscode/
 

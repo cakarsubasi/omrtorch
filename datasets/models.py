@@ -1,4 +1,5 @@
 import torch
+import torchvision
 from torchvision.models.detection import FasterRCNN
 from torchvision.models.detection.rpn import AnchorGenerator
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
@@ -42,5 +43,47 @@ def muscima_fpn_model(
         rpn_anchor_generator=rpn_anchor_generator,
         rpn_head=rpn_head,
         box_detections_per_img=1000)
+
+    return model
+
+def get_conv_next(num_classes=4):
+    backbone = torchvision.models.convnext_small(pretrained=True).features
+
+    backbone.out_channels = 768
+    # let's make the RPN generate 5 x 3 anchors per spatial
+    # location, with 5 different sizes and 3 different aspect
+    # ratios. We have a Tuple[Tuple[int]] because each feature
+    # map could potentially have different sizes and
+    # aspect ratios
+    aspects = (0.5, 1.0, 2.0)
+    
+    #anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
+    #aspect_ratios = (aspects,) * len(anchor_sizes)
+    
+    anchor_sizes = ((32, 64, 128, 256, 512),)
+    aspect_ratios = ((0.5, 1.0, 2.0),)
+    
+    rpn_anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
+    
+    #anchor_generator = AnchorGenerator(sizes=((32, 64, 128, 256, 512),),
+    #                                   aspect_ratios=((0.5, 1.0, 2.0),))
+    # let's define what are the feature maps that we will
+    # use to perform the region of interest cropping, as well as
+    # the size of the crop after rescaling.
+    # if your backbone returns a Tensor, featmap_names is expected to
+    # be ['0']. More generally, the backbone should return an
+    # OrderedDict[Tensor], and in featmap_names you can choose which
+    # feature maps to use.
+    roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'],
+                                                    output_size=7,
+                                                    sampling_ratio=2)
+    
+    #rpn_head = RPNHead(backbone.out_channels, rpn_anchor_generator.num_anchors_per_location()[0])
+    # put the pieces together inside a FasterRCNN model
+    model = FasterRCNN(backbone,
+                       num_classes=num_classes,
+                       rpn_anchor_generator=rpn_anchor_generator,
+                       box_roi_pool=roi_pooler,
+                       box_detections_per_img=1000)
 
     return model
