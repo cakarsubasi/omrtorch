@@ -48,7 +48,10 @@ def muscima_fpn_model(
         num_classes=num_classes,
         rpn_anchor_generator=rpn_anchor_generator,
         rpn_head=rpn_head,
-        box_detections_per_img=1000)
+        box_detections_per_img=1000,
+        rpn_batch_size_per_image=512,
+        rpn_fg_iou_thresh=0.6,
+        rpn_bg_iou_thresh=0.4,)
 
     return model
 
