@@ -15,19 +15,25 @@ def muscima_fpn_model(
     backbone='resnet50',
     aspects=(0.5, 1.0, 2.0)):
     '''
-    TODO: 
-    rpn_nms_thresh
-    rpn_fg_iou_thresh
-    rpn_bg_iou_thresh
-    rpn_batch_size_per_image
-    rpn_score_thresh
+    TODO:
+    rpn_pre_nms_top_n_train (2000)
+    rpn_pre_nms_top_n_test  (1000)
+    rpn_post_nms_top_n_train (2000)
+    rpn_post_nms_top_n_test  (1000)
+    rpn_nms_thresh (0.7)
+    rpn_fg_iou_thresh (0.7)
+    rpn_bg_iou_thresh (0.3)
+    rpn_batch_size_per_image (256)
+    rpn_score_thresh (0.0)
 
-    box_score_thresh
-    box_nms_thresh
+    box_score_thresh (0.05)
+    box_nms_thresh (0.5)
     box_detections_per_img
-    box_fg_iou_thresh
-    box_bg_iou_thresh
+    box_fg_iou_thresh (0.5)
+    box_bg_iou_thresh (0.5)
     '''
+    assert backbone in __backbones__
+
     model_backbone = resnet_fpn_backbone(backbone, pretrained=True, trainable_layers=5)
 
     anchor_sizes = ((32,), (64,), (128,), (256,), (512,))
@@ -46,7 +52,7 @@ def muscima_fpn_model(
 
     return model
 
-def get_conv_next(num_classes=4):
+def _get_conv_next(num_classes=4):
     backbone = torchvision.models.convnext_small(pretrained=True).features
 
     backbone.out_channels = 768
@@ -87,7 +93,7 @@ def get_conv_next(num_classes=4):
 
     return model
 
-def get_conv_next2(num_classes=4):
+def _get_conv_next2(num_classes=4):
     backbone = torchvision.models.convnext_small(pretrained=True).features
 
     backbone.out_channels = 768
@@ -126,7 +132,7 @@ def get_conv_next2(num_classes=4):
 
     return model
 
-def get_faster_rcnn_with_n_classes(n: int):
+def _get_faster_rcnn_with_n_classes(n: int):
   model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True, trainable_backbone_layers=5)
 
   in_features = model.roi_heads.box_predictor.cls_score.in_features

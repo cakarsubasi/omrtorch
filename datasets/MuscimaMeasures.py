@@ -7,6 +7,8 @@ from torch.utils.data import Dataset
 import numpy as np
 from PIL import Image
 
+import visionutils.transforms as T
+
 
 class MuscimaMeasures(Dataset):
   '''
@@ -97,3 +99,13 @@ def getListofClassNames(labels, label_strs):
   for label in labels:
       class_names.append(label_strs[label-1])
   return class_names 
+
+def get_transform(train):
+  transforms = []
+  # converts the image, a PIL image, into a PyTorch Tensor
+  transforms.append(T.ToTensor())
+  if train:
+      # during training, randomly flip the training images
+      # and ground-truth for data augmentation
+      transforms.append(T.RandomHorizontalFlip(0.5))
+  return T.Compose(transforms)
