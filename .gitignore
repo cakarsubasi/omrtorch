@@ -22,3 +22,7 @@ vision/
 
 # Muscima dataset directory
 muscima/
+data/
+
+# Checkpoints
+checkpoints/
