@@ -84,7 +84,7 @@ def processnotesheet(image: np.array) -> np.array:
         scaled = pyramid_reduce(tresh, 1 / scale, preserve_range=True).astype(np.uint8)
 
     M = cv2.getRotationMatrix2D((dst_w//2, dst_h//2), rotation, 1)
-    rotated = cv2.warpAffine(scaled, M, (dst_w, dst_h), borderMode=cv2.BORDER_REFLECT)
+    rotated = cv2.warpAffine(scaled, M, (dst_w, dst_h), borderMode=cv2.BORDER_CONSTANT)
 
     return rotated
 
