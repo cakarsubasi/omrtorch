@@ -4,6 +4,7 @@ from torchvision.models.detection import FasterRCNN
 from torchvision.models.detection.rpn import AnchorGenerator
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 from torchvision.models.detection.rpn import RPNHead
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 import torch.nn as nn
 
 __backbones__ = ['resnet18', 'resnet34', 'resnet50',

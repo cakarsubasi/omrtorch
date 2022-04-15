@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image
 
 import visionutils.transforms as T
+from torchvision.utils import draw_bounding_boxes
 
 
 class MuscimaMeasures(Dataset):
@@ -109,3 +110,25 @@ def get_transform(train):
       # and ground-truth for data augmentation
       transforms.append(T.RandomHorizontalFlip(0.5))
   return T.Compose(transforms)
+
+  
+def visualize_bboxes(image, target, labels=None, threshold=0.5):
+    if labels is None:
+      labels = {1 : 'system_measures', 2: 'measures'}
+    colors = ['000000', 'red', 'blue', 'green', 'yellow']
+    sample_boxes = target['boxes']
+    sample_scores = target['scores']
+    sample_labels = target['labels']
+    idx = torch.where(sample_scores > threshold)
+    boxes_sliced = sample_boxes[idx]
+    labels_sliced = sample_labels[idx].tolist()
+    colors_list = None
+    labels_list_str = None
+    if labels is not None:
+        labels_list_str = list(labels[val] for val in labels_sliced)
+        colors_list = list(colors[val] for val in labels_sliced)
+    sample_image = (image*255).type(torch.ByteTensor)
+
+    sample_im_with_bounding_boxes = draw_bounding_boxes(sample_image, boxes_sliced, labels_list_str, colors=colors_list, width=3, font_size=32)
+
+    return Image.fromarray(np.moveaxis(sample_im_with_bounding_boxes.numpy(), 0, -1))

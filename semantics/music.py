@@ -6,7 +6,3 @@ if __name__ == '__main__':
     print(score.analyze('key'))
     score.show()
 
-
-'''
-System measures and stave measures
-'''
