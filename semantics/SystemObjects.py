@@ -1,6 +1,7 @@
 from typing import Optional, Tuple
 import torch
 import numpy as np
+import music21
 
 
 class Staff():
@@ -84,14 +85,14 @@ class Staff():
 
 class SystemStaff():
     '''
-    Contain one or two staffs
+    Contains staffs and boundaries
     '''
+    def __init__(self, staves: Tuple[Staff], boundaries: np.array):
+        self.staves = staves
+        self.boundaries = boundaries
 
-    def __init__(self, staff1: Staff, staff2: Optional[Staff] = None):
-        self.staff1 = staff1
-
-        if staff2 is not None:
-            self.staff2 = staff2
+    def __call__(self, noteboxes: np.array):
+        pass
 
     pass
 
