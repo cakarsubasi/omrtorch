@@ -1,5 +1,6 @@
 import numpy as np
 from music21 import note as mnote
+from functools import total_ordering
 
 '''
 Classes to convert bounding boxes to staff measure relative coordinates
@@ -10,6 +11,7 @@ __notes = ["noteheadFull", "noteheadHalf", "noteheadWhole"]
 __notelengths = ["Whole", "Half", "Quarter", "8th", "16th"]
 __accidentals = ["accidentalSharp", "accidentalFlat", "accidentalNatural"]
 
+@total_ordering
 class glyph:
 
     def __init__(self, bbox: np.array):
@@ -21,7 +23,7 @@ class glyph:
 
         pass
 
-    def toBox(self) -> np.array:
+    def bbox(self) -> np.array:
         '''
         return the bounding box of the glyph
         '''
@@ -40,6 +42,12 @@ class glyph:
         Return the value rounded to the nearest int
         '''
         return round(2*(self.y - bottom)/gap)
+
+    def __lt__(self, other):
+        return self.x < other.x
+
+    def __eq__(self, other):
+        return self.x == other.x
         
 
 
@@ -75,8 +83,11 @@ class Rest(glyph):
 class Clef(glyph):
     '''
     Determines the octave of the staff
+
+    Clefs are surprisingly complicated, we are not going to bother with covering every possibility,
+    just the three most common.
     '''
-    def __init__(self, bbox: np.array):
+    def __init__(self, bbox: np.array, type='g'):
         super.__init__(bbox)
         pass
 

@@ -4,6 +4,8 @@ import numpy as np
 import music21
 
 
+
+
 class Staff():
     '''
     The idea is to have an array of staff objects and update each staff object
@@ -105,8 +107,14 @@ class SystemStaff():
         self.objects = objects
 
     def _objectify(self):
-
+        '''
+        Convert the object dictionary into 
+        '''
         pass
+
+    def bbox(self):
+        # TODO handle multi staff systems
+        return np.asarray([0, self.boundaries[0], 1, self.boundaries[1]])
 
     def toStream(self):
         # get staff position and staff gap
@@ -170,7 +178,7 @@ class SongFactory():
     MEASURE_THRESHOLD = 0.75
     #OBJECT_THRESHOLD = 1.0
 
-    def __init__(self, image, measuredetections, objectdetections):
+    def __init__(self, image, measuredetections, objectdetections, label_dict=None):
 
         self.image = image
         self.height, self.width = image.shape[1:3]
@@ -310,3 +318,14 @@ def detect_systems():
     return  [[0, 1], [2, 3]]
     '''
     pass
+
+
+def denormalize_bboxes(bboxes, image):
+    if len(bboxes.shape) == 1:
+        bboxes = np.expand_dims(bboxes, 0)
+
+    bboxes[:, [1, 3]] = bboxes[:, [1, 3]]*image.shape[1]
+    bboxes[:, [0, 2]] = bboxes[:, [0, 2]]*image.shape[2]
+
+    return bboxes
+    
