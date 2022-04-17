@@ -41,7 +41,7 @@ class glyph:
         Lowest staffline: 0.0
         Return the value rounded to the nearest int
         '''
-        return round(2*(self.y - bottom)/gap)
+        return round(2*(bottom - self.y)/gap)
 
     def __lt__(self, other):
         return self.x < other.x

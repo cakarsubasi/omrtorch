@@ -110,30 +110,7 @@ class SystemStaff():
     def __init__(self, staves: Tuple[Staff], boundaries: np.array, objects: dict):
         self.staves = staves
         self.boundaries = boundaries
-        #self.objects = objects
-        self.objects = self._objectify(objects)
-
-    def _objectify(self, objectsdict):
-        '''
-        Convert the object dictionary into our abstract classes
-        '''
-        objects = []
-        for b, l, s in zip(objectsdict['boxes'], objectsdict['labels'], objectsdict['scores']):
-            obj = None
-            if l in _notes:
-                # TODO: consider lengths (beyond scope potentially)
-                obj = SoundObjects.Note(b)
-            elif l in _accidentals:
-                # TODO: consider type
-                obj = SoundObjects.Accidental(b)
-            elif l in _clefs:
-                # TODO: consider type
-                obj = SoundObjects.Clef(b)
-            if obj is not None:
-                objects.append(obj)
-        objects.sort()
-
-        return objects
+        self.objects = _objectify(objects)
 
     def bbox(self):
         # TODO handle multi staff systems
@@ -141,6 +118,7 @@ class SystemStaff():
 
     def toStream(self):
         # get staff position and staff gap
+        #self.staves[0].
         pass
 
 
@@ -367,3 +345,24 @@ def denormalize_bboxes(bboxes, image):
     bboxes[:, [0, 2]] = bboxes[:, [0, 2]]*image.shape[2]
 
     return bboxes
+
+def _objectify(objectsdict):
+    '''
+    Convert the object dictionary into our abstract classes
+    '''
+    objects = []
+    for b, l, s in zip(objectsdict['boxes'], objectsdict['labels'], objectsdict['scores']):
+        obj = None
+        if l in _notes:
+            # TODO: consider lengths (beyond scope potentially)
+            obj = SoundObjects.Note(b)
+        elif l in _accidentals:
+            # TODO: consider type
+            obj = SoundObjects.Accidental(b)
+        elif l in _clefs:
+            # TODO: consider type
+            obj = SoundObjects.Clef(b)
+        if obj is not None:
+            objects.append(obj)
+    objects.sort()
+    return objects
