@@ -43,6 +43,7 @@ class Staff():
         return self_center < o_center
 
     def __str__(self):
+        # TODO
         return str(self.getStats())
 
     def getStats(self):
@@ -83,24 +84,58 @@ class Staff():
         self.stats['num'] = measures.shape[0]
 
 
+class Streamable():
+    def __init__(self):
+
+        pass
+
+    def toStream():
+        pass
+
+
 class SystemStaff():
     '''
     Contains staffs and boundaries
+
     '''
-    def __init__(self, staves: Tuple[Staff], boundaries: np.array):
+
+    def __init__(self, staves: Tuple[Staff], boundaries: np.array, objects: dict):
         self.staves = staves
         self.boundaries = boundaries
+        self.objects = objects
 
-    def __call__(self, noteboxes: np.array):
+    def _objectify(self):
+
         pass
 
-    pass
+    def toStream(self):
+        # get staff position and staff gap
+        pass
 
 
 class Measure():
     '''
-    key: key signature
+    measure handling ideas:
+    There are two possibilities
+    Measures are the same length on every staff or measures are different length in each stuff
+
+    Latter case is more general.
+
+    Assume that we detected a leftmost and rightmost measure. Use these as the min and max values.
+
+    For each staff, check all of the "gaps"
+
+    Add a syntethic measure if the gap is larger than expected
+    ////
+    Batch suppression?
+    If there are two measures with close left and right boundaries, average them
+
+    If there are two measures with close left OR right boundaries, there is ambiguity
+    (the longer one is more likely to be the right detection due to some note bars being detected)
+
+    This class should essentially be identical to SystemStaff except SystemStaff also has to handle staff measures
     '''
+    pass
 
 
 class Song():
@@ -109,17 +144,18 @@ class Song():
     Keeps track of staff regions and assigns notes to these regions
     '''
 
-    def __init__(self, systems: Tuple[SystemStaff], image: np.array, notes: np.array):
+    def __init__(self, systems: Tuple[SystemStaff], image: np.array):
         self.systems = systems
         self.image = image
-        self.notes = notes
 
     def assignNotes(self):
         pass
 
     def toStream(self):
         '''
-        Generate a music21 stream from object'''
+        Generate a music21 stream from object
+        Get the SystemStaff streams and concat them
+        '''
 
         pass
 
@@ -132,6 +168,7 @@ class SongFactory():
     '''
 
     MEASURE_THRESHOLD = 0.75
+    #OBJECT_THRESHOLD = 1.0
 
     def __init__(self, image, measuredetections, objectdetections):
 
@@ -141,6 +178,7 @@ class SongFactory():
         self.staff_measures = None
         self.staves = None
         self.boundaries = None
+        self.objects: dict = {}
 
         # filter unreliable results
         best_boxes = torch.where(
@@ -198,9 +236,48 @@ class SongFactory():
 
         # TODO: system detection
 
-        # TODO: process object detections
-        self.objectdetections = objectdetections
-        pass
+        object_boxes = objectdetections['boxes'].cpu().detach().numpy()
+        object_labels = objectdetections['labels'].cpu().detach().numpy()
+        # this is only for gt boxes, real detections will always have scores attached
+        if 'scores' not in objectdetections:
+            object_scores = np.ones(shape=object_labels.shape)
+        else:
+            object_scores = objectdetections['scores'].cpu().detach().numpy()
+
+        # normalize
+        object_boxes[:, [1, 3]] = object_boxes[:, [1, 3]]/self.height
+        object_boxes[:, [0, 2]] = object_boxes[:, [0, 2]]/self.width
+
+        # sort by y-axis (ascending)
+        sort_order = np.argsort((object_boxes[:, 1]+object_boxes[:, 3]))
+
+        object_boxes = object_boxes[sort_order]
+        object_labels = object_labels[sort_order]
+        object_scores = object_scores[sort_order]
+
+        self.objects['boxes'] = object_boxes
+        self.objects['labels'] = object_labels
+        self.objects['scores'] = object_scores
+
+        # generate SystemMeasures
+        groups = []
+        for boundary in self.boundaries:
+            staff_dict = {}
+            group = boundary[0] < self.objects['boxes'][:, 1]
+            group = group * (self.objects['boxes'][:, 1] < boundary[1])
+            for k, v in self.objects.items():
+                staff_dict[k] = v[group]
+            groups.append(staff_dict)
+
+        # TODO if we extract measure boundaries precisely, we can also split to measures
+        # need to do post process for measure boundaries
+        
+        systemStaffs = []
+
+        for idx, group in enumerate(groups):
+            systemStaffs.append(SystemStaff(self.staves[idx], boundaries[idx], group))
+            
+        self.song = Song(systemStaffs, self.image)
 
     def visualize(self):
         # TODO
@@ -219,3 +296,17 @@ def get_staff_boundaries(measure_centers):
     x4 = np.concatenate([gaps, [1]])
 
     return np.stack([x3, x4], axis=1)
+
+def get_measure_boundaries():
+    # TODO
+    pass
+
+def detect_systems():
+    '''
+    Idea: check overlap of measures and system measures
+    and return system measures as Tuple[Tuple[int]]
+
+    ie, you have four staffs and they form two systems,
+    return  [[0, 1], [2, 3]]
+    '''
+    pass
