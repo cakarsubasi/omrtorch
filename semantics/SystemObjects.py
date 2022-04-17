@@ -2,8 +2,14 @@ from typing import Optional, Tuple
 import torch
 import numpy as np
 import music21
+from . import SoundObjects
 
+_notes = ["noteheadFull", "noteheadHalf", "noteheadWhole"]
+_accidentals = ["accidentalSharp", "accidentalFlat", "accidentalNatural"]
+_clefs = ['gCflef', 'fClef', 'cClef']
 
+__pitch_objects__ = ['noteheadFull', 'noteheadHalf', 'noteheadWhole', 'accidentalSharp', 'accidentalFlat', 'accidentalNatural',
+                     'gCflef', 'fClef', 'cClef']
 
 
 class Staff():
@@ -104,13 +110,30 @@ class SystemStaff():
     def __init__(self, staves: Tuple[Staff], boundaries: np.array, objects: dict):
         self.staves = staves
         self.boundaries = boundaries
-        self.objects = objects
+        #self.objects = objects
+        self.objects = self._objectify(objects)
 
-    def _objectify(self):
+    def _objectify(self, objectsdict):
         '''
-        Convert the object dictionary into 
+        Convert the object dictionary into our abstract classes
         '''
-        pass
+        objects = []
+        for b, l, s in zip(objectsdict['boxes'], objectsdict['labels'], objectsdict['scores']):
+            obj = None
+            if l in _notes:
+                # TODO: consider lengths (beyond scope potentially)
+                obj = SoundObjects.Note(b)
+            elif l in _accidentals:
+                # TODO: consider type
+                obj = SoundObjects.Accidental(b)
+            elif l in _clefs:
+                # TODO: consider type
+                obj = SoundObjects.Clef(b)
+            if obj is not None:
+                objects.append(obj)
+        objects.sort()
+
+        return objects
 
     def bbox(self):
         # TODO handle multi staff systems
@@ -178,7 +201,7 @@ class SongFactory():
     MEASURE_THRESHOLD = 0.75
     #OBJECT_THRESHOLD = 1.0
 
-    def __init__(self, image, measuredetections, objectdetections, label_dict=None):
+    def __init__(self, image, measuredetections, objectdetections, label_list=None):
 
         self.image = image
         self.height, self.width = image.shape[1:3]
@@ -188,6 +211,12 @@ class SongFactory():
         self.boundaries = None
         self.objects: dict = {}
 
+        if label_list is None:
+            label_list = __pitch_objects__
+
+        ####
+        # STAFF HANDLING
+        ####
         # filter unreliable results
         best_boxes = torch.where(
             measuredetections['scores'] > self.MEASURE_THRESHOLD)
@@ -244,8 +273,15 @@ class SongFactory():
 
         # TODO: system detection
 
+        ####
+        # OBJECT HANDLING
+        ####
+
         object_boxes = objectdetections['boxes'].cpu().detach().numpy()
         object_labels = objectdetections['labels'].cpu().detach().numpy()
+        object_labels = np.asarray([label_list[idx-1]
+                                   for idx in object_labels])
+
         # this is only for gt boxes, real detections will always have scores attached
         if 'scores' not in objectdetections:
             object_scores = np.ones(shape=object_labels.shape)
@@ -279,12 +315,13 @@ class SongFactory():
 
         # TODO if we extract measure boundaries precisely, we can also split to measures
         # need to do post process for measure boundaries
-        
+
         systemStaffs = []
 
         for idx, group in enumerate(groups):
-            systemStaffs.append(SystemStaff(self.staves[idx], boundaries[idx], group))
-            
+            systemStaffs.append(SystemStaff(
+                self.staves[idx], boundaries[idx], group))
+
         self.song = Song(systemStaffs, self.image)
 
     def visualize(self):
@@ -305,9 +342,11 @@ def get_staff_boundaries(measure_centers):
 
     return np.stack([x3, x4], axis=1)
 
+
 def get_measure_boundaries():
     # TODO
     pass
+
 
 def detect_systems():
     '''
@@ -328,4 +367,3 @@ def denormalize_bboxes(bboxes, image):
     bboxes[:, [0, 2]] = bboxes[:, [0, 2]]*image.shape[2]
 
     return bboxes
-    

@@ -54,7 +54,7 @@ class glyph:
 class Note(glyph):
 
     def __init__(self, bbox: np.array, length=1.0):
-        super.__init__(bbox)
+        super().__init__(bbox)
         self.length = length
         pass
 
@@ -65,7 +65,7 @@ class Accidental(glyph):
     if to the left of all notes, modify every note
     '''
     def __init__(self, bbox: np.array, type="Natural"):
-        super.__init__(bbox)
+        super().__init__(bbox)
         self.type = type
 
         pass
@@ -76,7 +76,7 @@ class Rest(glyph):
     Optional, rests do nothing
     '''
     def __init__(self, bbox: np.array):
-        super.__init__(bbox)
+        super().__init__(bbox)
         pass
 
 
@@ -88,7 +88,7 @@ class Clef(glyph):
     just the three most common.
     '''
     def __init__(self, bbox: np.array, type='g'):
-        super.__init__(bbox)
+        super().__init__(bbox)
         pass
 
 
