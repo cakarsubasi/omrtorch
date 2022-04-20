@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 import torch
 import numpy as np
 import music21
-from . import SoundObjects
+from semantics import SoundObjects
 
 _notes = ["noteheadFull", "noteheadHalf", "noteheadWhole"]
 _accidentals = ["accidentalSharp", "accidentalFlat", "accidentalNatural"]
@@ -18,7 +18,7 @@ class Staff():
     and then suppress the objects that don't have enough pairs
 
     fields:
-    measures: array of 1x4 ndarrays of normalized xmin, ymin, xmax, ymax values
+    measures:  Nx4 ndarray of normalized xmin, ymin, xmax, ymax values
     stats: dict of information regarding the 
     '''
 
@@ -26,14 +26,14 @@ class Staff():
     TOLERANCE = 0.01
 
     def __init__(self, measureObj: np.array = None):
-        self.measures = []
+        self.measures = np.array([])
         self.stats = {}
         if measureObj is not None:
-            self.measures.append(measureObj)
+            self.measures = np.expand_dims(measureObj, axis=0)
 
     def append(self, measureObj: np.array) -> bool:
         if len(self.measures) == 0:
-            self.measures.append(measureObj)
+            self.measures = np.expand_dims(measureObj, axis=0)
             return True
         self._calculateStats()
         top = measureObj[1]
@@ -41,7 +41,7 @@ class Staff():
         if np.abs(self.stats['top'] - top) > self.TOLERANCE or np.abs(self.stats['bottom'] - bottom) > self.TOLERANCE:
             return False
         else:
-            self.measures.append(measureObj)
+            self.measures = np.vstack([self.measures, measureObj])
             return True
 
     def __lt__(self, o):
@@ -107,9 +107,14 @@ class SystemStaff():
 
     '''
 
-    def __init__(self, staves: Tuple[Staff], boundaries: np.array, objects: dict):
+    def __init__(self, staves: Tuple[Staff], yboundaries: np.array, objects: dict=None):
+        '''
+        staves: staffs that belong to this system
+        yboundaries: ymin, ymax limits of the system
+        objects: dictionary of object bboxes, classes, scores
+        '''
         self.staves = staves
-        self.boundaries = boundaries
+        self.boundaries = yboundaries
         self.objects = _objectify(objects)
 
     def bbox(self):
@@ -144,7 +149,21 @@ class Measure():
 
     This class should essentially be identical to SystemStaff except SystemStaff also has to handle staff measures
     '''
-    pass
+
+    def __init__(self, boundaries: np.array, objects: dict = None):
+        '''
+        boundaries: 1x4 bbox coordinates
+        objects
+        '''
+        self.boundaries = boundaries
+        self.objects = _objectify(objects)
+
+    def bbox(self):
+        return self.boundaries
+
+    def toStream(self):
+
+        pass
 
 
 class Song():
@@ -241,6 +260,9 @@ class SongFactory():
                 nextstaff = Staff()
                 staves.append(nextstaff)
                 staves[-1].append(staff_measures[i])
+
+        for staff in staves:
+            staff.measures = process_measures(staff.measures)
 
         self.staves = staves
 
@@ -366,3 +388,30 @@ def _objectify(objectsdict):
             objects.append(obj)
     objects.sort()
     return objects
+
+
+def process_measures(measures, xmin=None, xmax=None):
+    '''
+    Takes a list of measures in the same staff
+
+    Returns a "processed" list of measures
+
+    New list has no gaps and overlaps and extends across the entire staff
+    '''
+    # batch suppression TODO
+
+    # detect large gaps TODO
+
+    # merge measures
+    sort_order = np.argsort(measures[:,0])
+    measures = measures[sort_order]
+
+    # xmin
+    xmins = measures[:,0]
+    xmaxs = measures[:,2]
+
+    avgs = np.average([xmins[1:], xmaxs[:-1]], axis=0)
+
+    measures[1:,0], measures[:-1,2] = avgs, avgs
+
+    return measures
