@@ -216,7 +216,15 @@ class Song():
 
         pass
 
-    pass
+    def toJSON(self):
+        '''
+        Serialize the song into a JSON string
+        # TODO
+        '''
+
+        return self.__dict__
+
+
 
 
 class SongFactory():
@@ -373,11 +381,6 @@ def get_staff_boundaries(measure_centers):
     return np.stack([x3, x4], axis=1)
 
 
-def get_measure_boundaries():
-    # TODO
-    pass
-
-
 def detect_systems():
     '''
     Idea: check overlap of measures and system measures
@@ -385,6 +388,8 @@ def detect_systems():
 
     ie, you have four staffs and they form two systems,
     return  [[0, 1], [2, 3]]
+
+    # TODO
     '''
     pass
 
@@ -446,17 +451,3 @@ def process_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
     measures[1:, 0], measures[:-1, 2] = avgs, avgs
 
     return measures
-
-
-def SongtoJSON(song: Song):
-    '''
-    #TODO
-
-    Converts a song object to JSON
-
-    Song -> SystemStaff -> Measures -> Glyphs
-                ||
-                vv
-              Staff
-    '''
-    pass
