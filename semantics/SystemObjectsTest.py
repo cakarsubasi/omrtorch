@@ -18,7 +18,6 @@ def main(root: str):
       with open(OBJECT_PATH, "rb") as object_dict:
          objects = pickle.load(object_dict)
       
-      # TODO, fix this goof
       factory = SystemObjects.SongFactory(image, measures, objects)
 
       process_measuresTest()
