@@ -22,8 +22,6 @@ class glyph:
         # size is only needed to go back to bbox
         self.size = [bbox[2]-bbox[0], bbox[3]-bbox[1]]
 
-        pass
-
     def bbox(self) -> np.array:
         '''
         return the bounding box of the glyph
@@ -57,8 +55,6 @@ class Note(glyph):
     def __init__(self, bbox: np.array, length=1.0):
         super().__init__(bbox)
         self.length = length
-        pass
-
 
 class Accidental(glyph):
     '''
@@ -69,17 +65,13 @@ class Accidental(glyph):
         super().__init__(bbox)
         self.type = type
 
-        pass
-
-
 class Rest(glyph):
     '''
     Optional, rests do nothing
     '''
-    def __init__(self, bbox: np.array):
+    def __init__(self, bbox: np.array, length=1.0):
         super().__init__(bbox)
-        pass
-
+        self.length = length
 
 class Clef(glyph):
     '''
@@ -88,12 +80,15 @@ class Clef(glyph):
     Clefs are surprisingly complicated, we are not going to bother with covering every possibility,
     just the three most common.
     '''
-    def __init__(self, bbox: np.array, type='g'):
+    def __init__(self, bbox: np.array, type='gClef'):
         super().__init__(bbox)
-        pass
-
-
+        self.type = type
 
 def getNote(clef: Clef, relativepos: int) -> mnote.Note:
+    '''
+    Get music21 note based on Clef and relative position.
+    
+    # TODO
+    '''
 
     pass
