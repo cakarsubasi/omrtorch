@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import music21
 from semantics import SoundObjects
+from functools import total_ordering
 
 _notes = ["noteheadFull", "noteheadHalf", "noteheadWhole"]
 _accidentals = ["accidentalSharp", "accidentalFlat", "accidentalNatural"]
@@ -12,6 +13,7 @@ __pitch_objects__ = ['noteheadFull', 'noteheadHalf', 'noteheadWhole', 'accidenta
                      'gCflef', 'fClef', 'cClef']
 
 
+@total_ordering
 class Staff():
     '''
     The idea is to have an array of staff objects and update each staff object
@@ -101,32 +103,55 @@ class Streamable():
         pass
 
 
+@total_ordering
 class SystemStaff():
     '''
     Contains staffs and boundaries
 
+    Generates Measures and populate them with objects TODO
+
     '''
 
-    def __init__(self, staves: Tuple[Staff], yboundaries: np.array, objects: dict=None):
+    def __init__(self, staves: Tuple[Staff], yboundaries: np.array, objects: dict = None):
         '''
         staves: staffs that belong to this system
         yboundaries: ymin, ymax limits of the system
         objects: dictionary of object bboxes, classes, scores
         '''
+        # TODO handle two staff systems
         self.staves = staves
         self.boundaries = yboundaries
-        self.objects = _objectify(objects)
+        measure_boxes = []
+        for measure in staves.measures:
+            measure_boxes.append(
+                np.array([measure[0], yboundaries[0], measure[2], yboundaries[1]]))
+        self.measure_boxes = np.asarray(measure_boxes)
 
+        self.objects = _objectify(objects)
+        self.objects.sort()
+
+        # List of measures in order
+        measures = []
+        for measure in measure_boxes:
+            objects = list(
+                filter(lambda obj: measure[0] <= obj.x < measure[2], self.objects))
+            measures.append(Measure(boundaries=measure, objects=objects))
+        self.measures = measures            
+
+    def __lt__(self, other):
+        return np.average(self.boundaries) < np.average(other.boundaries)
+        
     def bbox(self):
         # TODO handle multi staff systems
         return np.asarray([0, self.boundaries[0], 1, self.boundaries[1]])
 
+    # TODO
     def toStream(self):
         # get staff position and staff gap
-        #self.staves[0].
+        # self.staves[0].
         pass
 
-
+@total_ordering
 class Measure():
     '''
     measure handling ideas:
@@ -150,16 +175,20 @@ class Measure():
     This class should essentially be identical to SystemStaff except SystemStaff also has to handle staff measures
     '''
 
-    def __init__(self, boundaries: np.array, objects: dict = None):
+    def __init__(self, boundaries: np.array, objects = None):
         '''
         boundaries: 1x4 bbox coordinates
         objects
         '''
         self.boundaries = boundaries
-        self.objects = _objectify(objects)
+        if objects is not None:
+            self.objects = objects
 
     def bbox(self):
         return self.boundaries
+
+    def __lt__(self, other):
+        return np.average(self.boundaries[[0,2]]) < np.average(other.boundaries[[0,2]])
 
     def toStream(self):
 
@@ -261,6 +290,7 @@ class SongFactory():
                 staves.append(nextstaff)
                 staves[-1].append(staff_measures[i])
 
+        # Measure processing
         for staff in staves:
             staff.measures = process_measures(staff.measures)
 
@@ -368,6 +398,7 @@ def denormalize_bboxes(bboxes, image):
 
     return bboxes
 
+
 def _objectify(objectsdict):
     '''
     Convert the object dictionary into our abstract classes
@@ -390,7 +421,7 @@ def _objectify(objectsdict):
     return objects
 
 
-def process_measures(measures, xmin=None, xmax=None):
+def process_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
     '''
     Takes a list of measures in the same staff
 
@@ -398,20 +429,34 @@ def process_measures(measures, xmin=None, xmax=None):
 
     New list has no gaps and overlaps and extends across the entire staff
     '''
-    # batch suppression TODO
+    # TODO: batch suppression
 
-    # detect large gaps TODO
+    # TODO: detect large gaps
 
     # merge measures
-    sort_order = np.argsort(measures[:,0])
+    sort_order = np.argsort(measures[:, 0])
     measures = measures[sort_order]
 
     # xmin
-    xmins = measures[:,0]
-    xmaxs = measures[:,2]
+    xmins = measures[:, 0]
+    xmaxs = measures[:, 2]
 
     avgs = np.average([xmins[1:], xmaxs[:-1]], axis=0)
 
-    measures[1:,0], measures[:-1,2] = avgs, avgs
+    measures[1:, 0], measures[:-1, 2] = avgs, avgs
 
     return measures
+
+
+def SongtoJSON(song: Song):
+    '''
+    #TODO
+
+    Converts a song object to JSON
+
+    Song -> SystemStaff -> Measures -> Glyphs
+                ||
+                vv
+              Staff
+    '''
+    pass
