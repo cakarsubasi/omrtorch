@@ -47,6 +47,21 @@ class glyph:
 
     def __eq__(self, other):
         return self.x == other.x
+
+    def toDict(self):
+        '''
+        serialization test method
+        # TODO
+        '''
+        dictionary = {}
+        dictionary['type'] = 'glyph'
+        dictionary['box'] =  {'x': self.x,
+                'y': self.y,
+                'w': self.size[0].astype(float),
+                'h': self.size[1].astype(float),
+                }
+        return dictionary
+        
         
 
 
@@ -54,6 +69,7 @@ class Note(glyph):
 
     def __init__(self, bbox: np.array, length=1.0):
         super().__init__(bbox)
+        self.type = 'Note'
         self.length = length
 
 class Accidental(glyph):
@@ -64,6 +80,12 @@ class Accidental(glyph):
     def __init__(self, bbox: np.array, type="Natural"):
         super().__init__(bbox)
         self.type = type
+
+    def toDict(self):
+        dictionary = super().toDict()
+        dictionary['type'] = 'Accidental'
+        return dictionary
+
 
 class Rest(glyph):
     '''

@@ -171,6 +171,12 @@ class Measure():
     def __lt__(self, other):
         return np.average(self.boundaries[[0,2]]) < np.average(other.boundaries[[0,2]])
 
+    def toDict(self):
+        dictionary = {}
+        dictionary['type'] = 'Measure'
+        dictionary['objects'] = {idx: obj.toDict() for idx, obj in enumerate(self.objects)}
+        return dictionary
+
     def toStream(self):
 
         pass
@@ -185,6 +191,9 @@ class Song():
     def __init__(self, systems: Tuple[SystemStaff], image: np.array):
         self.systems = systems
         self.image = image
+
+    def toDict(self):
+        return {idx: system.__dict__ for idx, system in enumerate(self.__dict__['systems'])}
 
     def assignNotes(self):
         pass
