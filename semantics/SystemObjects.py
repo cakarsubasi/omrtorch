@@ -154,27 +154,8 @@ class SystemStaff():
 @total_ordering
 class Measure():
     '''
-    measure handling ideas:
-    There are two possibilities
-    Measures are the same length on every staff or measures are different length in each stuff
-
-    Latter case is more general.
-
-    Assume that we detected a leftmost and rightmost measure. Use these as the min and max values.
-
-    For each staff, check all of the "gaps"
-
-    Add a syntethic measure if the gap is larger than expected
-    ////
-    Batch suppression?
-    If there are two measures with close left and right boundaries, average them
-
-    If there are two measures with close left OR right boundaries, there is ambiguity
-    (the longer one is more likely to be the right detection due to some note bars being detected)
-
     This class should essentially be identical to SystemStaff except SystemStaff also has to handle staff measures
     '''
-
     def __init__(self, boundaries: np.array, objects = None):
         '''
         boundaries: 1x4 bbox coordinates
@@ -428,6 +409,24 @@ def _objectify(objectsdict):
 
 def process_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
     '''
+    measure handling ideas:
+    There are two possibilities
+    Measures are the same length on every staff or measures are different length in each stuff
+
+    Latter case is more general.
+
+    Assume that we detected a leftmost and rightmost measure. Use these as the min and max values.
+
+    For each staff, check all of the "gaps"
+
+    Add a syntethic measure if the gap is larger than expected
+    ////
+    Batch suppression?
+    If there are two measures with close left and right boundaries, average them
+
+    If there are two measures with close left OR right boundaries, there is ambiguity
+    (the longer one is more likely to be the right detection due to some note bars being detected)
+    
     Takes a list of measures in the same staff
 
     Returns a "processed" list of measures

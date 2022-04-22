@@ -21,9 +21,15 @@ def main(root: str):
       factory = SystemObjects.SongFactory(image, measures, objects)
 
       process_measuresTest()
+      sortTest(factory)
 
       print("All assertions passed.")
 
+def sortTest(factory):
+   assert (factory.song.systems[0] < factory.song.systems[1])
+
+   print("sort passed")
+   pass
 
 def process_measuresTest():
       some_measures = np.array([[0.59070754, 0.37419364, 0.7296071 , 0.46695033],
