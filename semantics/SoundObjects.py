@@ -12,6 +12,7 @@ __notelengths = ["Whole", "Half", "Quarter", "8th", "16th"]
 __accidentals = ["accidentalSharp", "accidentalFlat", "accidentalNatural"]
 __clefs = ['gCflef', 'fClef', 'cClef']
 
+
 @total_ordering
 class glyph:
 
@@ -55,14 +56,12 @@ class glyph:
         '''
         dictionary = {}
         dictionary['type'] = 'glyph'
-        dictionary['box'] =  {'x': self.x,
-                'y': self.y,
-                'w': self.size[0].astype(float),
-                'h': self.size[1].astype(float),
-                }
+        dictionary['objects'] = {'x': self.x,
+                                 'y': self.y,
+                                 'w': self.size[0].astype(float),
+                                 'h': self.size[1].astype(float),
+                                 }
         return dictionary
-        
-        
 
 
 class Note(glyph):
@@ -72,11 +71,19 @@ class Note(glyph):
         self.type = 'Note'
         self.length = length
 
+    def toDict(self):
+        dictionary = super().toDict()
+        dictionary['type'] = 'Note'
+        dictionary['objects']['length'] = self.length
+        return dictionary
+
+
 class Accidental(glyph):
     '''
     Modify the notes to the right of the measure,
     if to the left of all notes, modify every note
     '''
+
     def __init__(self, bbox: np.array, type="Natural"):
         super().__init__(bbox)
         self.type = type
@@ -91,9 +98,17 @@ class Rest(glyph):
     '''
     Optional, rests do nothing
     '''
+
     def __init__(self, bbox: np.array, length=1.0):
         super().__init__(bbox)
         self.length = length
+
+    def toDict(self):
+        dictionary = super().toDict()
+        dictionary['type'] = 'Rest'
+        dictionary['objects']['length'] = self.length
+        return dictionary
+
 
 class Clef(glyph):
     '''
@@ -102,14 +117,16 @@ class Clef(glyph):
     Clefs are surprisingly complicated, we are not going to bother with covering every possibility,
     just the three most common.
     '''
+
     def __init__(self, bbox: np.array, type='gClef'):
         super().__init__(bbox)
         self.type = type
 
+
 def getNote(clef: Clef, relativepos: int) -> mnote.Note:
     '''
     Get music21 note based on Clef and relative position.
-    
+
     # TODO
     '''
 

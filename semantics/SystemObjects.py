@@ -136,27 +136,37 @@ class SystemStaff():
             objects = list(
                 filter(lambda obj: measure[0] <= obj.x < measure[2], self.objects))
             measures.append(Measure(boundaries=measure, objects=objects))
-        self.measures = measures            
+        self.measures = measures
 
     def __lt__(self, other):
         return np.average(self.boundaries) < np.average(other.boundaries)
-        
+
     def bbox(self):
         # TODO handle multi staff systems
         return np.asarray([0, self.boundaries[0], 1, self.boundaries[1]])
 
+    def toDict(self):
+        # TODO add boundaries and staffs
+        dictionary = {}
+        dictionary['type'] = 'StaffSystem'
+        dictionary['objects'] = {idx: obj.toDict()
+                                 for idx, obj in enumerate(self.measures)}
+        return dictionary
     # TODO
+
     def toStream(self):
         # get staff position and staff gap
         # self.staves[0].
         pass
+
 
 @total_ordering
 class Measure():
     '''
     This class should essentially be identical to SystemStaff except SystemStaff also has to handle staff measures
     '''
-    def __init__(self, boundaries: np.array, objects = None):
+
+    def __init__(self, boundaries: np.array, objects=None):
         '''
         boundaries: 1x4 bbox coordinates
         objects
@@ -169,12 +179,13 @@ class Measure():
         return self.boundaries
 
     def __lt__(self, other):
-        return np.average(self.boundaries[[0,2]]) < np.average(other.boundaries[[0,2]])
+        return np.average(self.boundaries[[0, 2]]) < np.average(other.boundaries[[0, 2]])
 
     def toDict(self):
         dictionary = {}
         dictionary['type'] = 'Measure'
-        dictionary['objects'] = {idx: obj.toDict() for idx, obj in enumerate(self.objects)}
+        dictionary['objects'] = {idx: obj.toDict()
+                                 for idx, obj in enumerate(self.objects)}
         return dictionary
 
     def toStream(self):
@@ -198,6 +209,14 @@ class Song():
     def assignNotes(self):
         pass
 
+    def toDict(self):
+        # TODO, image metadata?
+        dictionary = {}
+        dictionary['type'] = 'Song'
+        dictionary['objects'] = {idx: system.toDict()
+                                 for idx, system in enumerate(self.systems)}
+        return dictionary
+
     def toStream(self):
         '''
         Generate a music21 stream from object
@@ -213,8 +232,6 @@ class Song():
         '''
 
         return self.__dict__
-
-
 
 
 class SongFactory():
@@ -435,7 +452,7 @@ def process_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
 
     If there are two measures with close left OR right boundaries, there is ambiguity
     (the longer one is more likely to be the right detection due to some note bars being detected)
-    
+
     Takes a list of measures in the same staff
 
     Returns a "processed" list of measures
