@@ -426,7 +426,7 @@ def _objectify(objectsdict):
             obj = SoundObjects.Accidental(b)
         elif l in _clefs:
             # TODO: consider type
-            obj = SoundObjects.Clef(b)
+            obj = SoundObjects.Clef(b, l)
         if obj is not None:
             objects.append(obj)
     objects.sort()

@@ -51,8 +51,8 @@ class glyph:
 
     def toDict(self):
         '''
-        serialization test method
-        # TODO
+        serialization method
+        # TODO: use a better format for Java parsing
         '''
         dictionary = {}
         dictionary['type'] = 'glyph'
@@ -84,13 +84,14 @@ class Accidental(glyph):
     if to the left of all notes, modify every note
     '''
 
-    def __init__(self, bbox: np.array, type="Natural"):
+    def __init__(self, bbox: np.array, AccidentalType="Natural"):
         super().__init__(bbox)
-        self.type = type
+        self.type = AccidentalType
 
     def toDict(self):
         dictionary = super().toDict()
         dictionary['type'] = 'Accidental'
+        dictionary['objects']['accidentalType'] = self.type
         return dictionary
 
 
@@ -118,9 +119,15 @@ class Clef(glyph):
     just the three most common.
     '''
 
-    def __init__(self, bbox: np.array, type='gClef'):
+    def __init__(self, bbox: np.array, clefType='gClef'):
         super().__init__(bbox)
-        self.type = type
+        self.type = clefType
+
+    def toDict(self):
+        dictionary = super().toDict()
+        dictionary['type'] = 'Clef'
+        dictionary['objects']['clefType'] = self.type
+        return dictionary
 
 
 def getNote(clef: Clef, relativepos: int) -> mnote.Note:
@@ -152,10 +159,44 @@ def getNote(clef: Clef, relativepos: int) -> mnote.Note:
         pass
 
     elif (clef.type == 'fClef'):
-        pass
+        # TODO: update this to be correct
+        name = {
+            -2: 'c4',
+            -1: 'd4',
+            0: 'e4',
+            1: 'f4',
+            2: 'g4',
+            3: 'a4',
+            4: 'b4',
+            5: "c5",
+            6: "d5",
+            7: "e5",
+            8: "f5",
+            9: "g5",
+            10: "a5",
+            11: "b5",
+            12: "c6",
+        }[relativepos]  
 
     elif (clef.type == 'cClef'):
-        pass
+        # TODO: update this to be correct
+        name = {
+            -2: 'c4',
+            -1: 'd4',
+            0: 'e4',
+            1: 'f4',
+            2: 'g4',
+            3: 'a4',
+            4: 'b4',
+            5: "c5",
+            6: "d5",
+            7: "e5",
+            8: "f5",
+            9: "g5",
+            10: "a5",
+            11: "b5",
+            12: "c6",
+        }[relativepos]  
 
     else:
         pass
