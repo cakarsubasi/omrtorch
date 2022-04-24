@@ -93,6 +93,10 @@ class Staff():
             (self.stats['bottom'] - self.stats['top'])/2
         self.stats['num'] = measures.shape[0]
 
+    def toDict(self):
+        # TODO
+        pass
+
 
 class Streamable():
     def __init__(self):
@@ -240,7 +244,7 @@ class SongFactory():
     '''
 
     MEASURE_THRESHOLD = 0.75
-    #OBJECT_THRESHOLD = 1.0
+    OBJECT_THRESHOLD = 0.0
 
     def __init__(self, image, measuredetections, objectdetections, label_list=None):
 
@@ -333,6 +337,14 @@ class SongFactory():
         else:
             object_scores = objectdetections['scores'].cpu().detach().numpy()
 
+        # Filter unreliable results
+        best_boxes = np.where(
+            object_scores > self.OBJECT_THRESHOLD)
+
+        object_boxes = object_boxes[best_boxes]
+        object_labels = object_labels[best_boxes]
+        object_scores = object_scores[best_boxes]
+
         # normalize
         object_boxes[:, [1, 3]] = object_boxes[:, [1, 3]]/self.height
         object_boxes[:, [0, 2]] = object_boxes[:, [0, 2]]/self.width
@@ -422,10 +434,8 @@ def _objectify(objectsdict):
             # TODO: consider lengths (beyond scope potentially)
             obj = SoundObjects.Note(b)
         elif l in _accidentals:
-            # TODO: consider type
-            obj = SoundObjects.Accidental(b)
+            obj = SoundObjects.Accidental(b, l)
         elif l in _clefs:
-            # TODO: consider type
             obj = SoundObjects.Clef(b, l)
         if obj is not None:
             objects.append(obj)
