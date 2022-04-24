@@ -129,5 +129,35 @@ def getNote(clef: Clef, relativepos: int) -> mnote.Note:
 
     # TODO
     '''
+    name: str = ''
 
-    pass
+    if (clef.type == 'gClef'):
+        name = {
+            -2: 'c4',
+            -1: 'd4',
+            0: 'e4',
+            1: 'f4',
+            2: 'g4',
+            3: 'a4',
+            4: 'b4',
+            5: "c5",
+            6: "d5",
+            7: "e5",
+            8: "f5",
+            9: "g5",
+            10: "a5",
+            11: "b5",
+            12: "c6",
+        }[relativepos]   
+        pass
+
+    elif (clef.type == 'fClef'):
+        pass
+
+    elif (clef.type == 'cClef'):
+        pass
+
+    else:
+        pass
+    
+    return mnote.Note(name)
