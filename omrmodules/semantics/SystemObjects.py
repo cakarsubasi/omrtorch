@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 import torch
 import numpy as np
 import music21
-from semantics import SoundObjects
+import SoundObjects
 from functools import total_ordering
 
 _notes = ["noteheadFull", "noteheadHalf", "noteheadWhole"]
@@ -234,7 +234,7 @@ class Song():
         Serialize the song into a JSON string
         # TODO
         '''
-
+        
         return self.__dict__
 
 

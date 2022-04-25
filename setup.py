@@ -11,7 +11,9 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
-    package_dir={"": "."},
-    packages=setuptools.find_packages(where="."),
+    package_dir={"": ".",
+                #"datasets": "omrmodules/datasets",
+                },
+    packages=['omrmodules'],
     python_requires=">=3.7",
 )
