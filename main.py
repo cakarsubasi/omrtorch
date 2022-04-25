@@ -19,7 +19,7 @@ def main():
     model_objects.eval()
     model_measures([torch.rand(1,400,400)])
     model_objects([torch.rand(1,400,400)])
-
+    
     ###
     #
 
