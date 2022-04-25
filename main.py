@@ -4,21 +4,27 @@ import omrmodules
 import torch
 import cv2 as cv
 
+import numpy as np
+
 def main():
 
     ###
     # preparation
     IMAGE = os.path.join('samples', 'aural_tests.jpg')
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     # load models
     MODEL_MEASURE = os.path.join('saved_models', 'muscima_measures.pt')
     MODEL_OBJECT = os.path.join('saved_models', 'muscima_objects_pitchonly.pt')
     model_measures = torch.load(MODEL_MEASURE, map_location=torch.device('cpu'))
     model_objects = torch.load(MODEL_OBJECT, map_location=torch.device('cpu'))
+    model_measures.to(device)
+    model_objects.to(device)
     model_measures.eval()
     model_objects.eval()
-    model_measures([torch.rand(1,400,400)])
-    model_objects([torch.rand(1,400,400)])
+    model_measures([torch.rand(1,400,400).to(device)])
+    model_objects([torch.rand(1,400,400).to(device)])
+
     
     ###
     #
@@ -30,9 +36,13 @@ def main():
     image = omrmodules.normalization.preprocess.processnotesheet(image)
 
     # model inference
-
+    image = (np.expand_dims(image, 0) / 255.0).astype(np.float32)
+    image = [torch.from_numpy(image).to(device)]
+    measure_dict = model_measures(image)
+    object_dict = model_objects(image)
 
     # pass results to SongFactory
+    songFactory = omrmodules.semantics.SystemObjects.SongFactory(image[0], measure_dict[0], object_dict[0])
 
     # Write to JSON
 

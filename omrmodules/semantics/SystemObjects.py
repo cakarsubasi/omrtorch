@@ -29,7 +29,14 @@ class Staff():
 
     def __init__(self, measureObj: np.array = None):
         self.measures = np.array([])
-        self.stats = {}
+        self.stats = {
+            'top': 0,
+            'bottom': 0,
+            'left': 0,
+            'right': 0,
+            'center': 0,
+            'num': 0,
+            }
         if measureObj is not None:
             self.measures = np.expand_dims(measureObj, axis=0)
 
@@ -481,6 +488,8 @@ def process_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
     xmins = measures[:, 0]
     xmaxs = measures[:, 2]
 
+    if len(xmins) < 2:
+        return measures
     avgs = np.average([xmins[1:], xmaxs[:-1]], axis=0)
 
     measures[1:, 0], measures[:-1, 2] = avgs, avgs
