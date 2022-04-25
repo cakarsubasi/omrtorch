@@ -18,5 +18,12 @@ setuptools.setup(
                 #"datasets": "omrmodules/datasets",
                 },
     packages=['omrmodules'],
+    install_requires=[
+        'opencv-python',
+        'xmlschema',
+        'omrdatasettools',
+        'pycocotools',
+        'music21',
+    ],
     python_requires=">=3.7",
 )
