@@ -1,3 +1,1 @@
-import omrmodules.normalization.preprocess
-
-#print('imported normalization')
+print('imported normalization')
