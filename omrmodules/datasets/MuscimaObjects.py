@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 import numpy as np
 from PIL import Image
 
-import visionutils.transforms as T
+from ..visionutils import transforms as T
 
 __pitch_objects__ = ['noteheadFull', 'noteheadHalf', 'noteheadWhole', 'accidentalSharp', 'accidentalFlat', 'accidentalNatural',
                     'gCflef', 'fClef', 'cClef']

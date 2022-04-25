@@ -1,9 +1,10 @@
 import numpy as np
 import os
 import pickle
+import torch
 import cv2 as cv
 
-import SystemObjects
+from . import SystemObjects
 
 def main(root: str):
 
@@ -14,9 +15,9 @@ def main(root: str):
       image = cv.imread(IMAGE_PATH)
 
       with open(MEASURE_PATH, "rb") as measure_dict:
-         measures = pickle.load(measure_dict)
+         measures = torch.load(measure_dict, map_location=torch.device('cpu'))
       with open(OBJECT_PATH, "rb") as object_dict:
-         objects = pickle.load(object_dict)
+         objects = torch.load(object_dict, map_location=torch.device('cpu'))
       
       factory = SystemObjects.SongFactory(image, measures, objects)
 

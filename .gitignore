@@ -1,6 +1,9 @@
 # Python build files
 __pycache__/
 
+# pip build files
+*.egg-info
+
 # PyCharm project files
 .idea
 

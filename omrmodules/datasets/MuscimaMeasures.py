@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 import numpy as np
 from PIL import Image
 
-import visionutils.transforms as T
+from ..visionutils import transforms as T
 from torchvision.utils import draw_bounding_boxes
 
 
