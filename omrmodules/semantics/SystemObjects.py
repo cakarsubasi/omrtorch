@@ -1,6 +1,7 @@
 from typing import Optional, Tuple
 import torch
 import numpy as np
+import json
 import music21
 from . import SoundObjects
 from functools import total_ordering
@@ -36,7 +37,7 @@ class Staff():
             'right': 0,
             'center': 0,
             'num': 0,
-            }
+        }
         if measureObj is not None:
             self.measures = np.expand_dims(measureObj, axis=0)
 
@@ -92,8 +93,8 @@ class Staff():
     def _calculateStats(self):
         measures = np.array(self.measures)
 
-        self.stats['top'] = np.average(measures[:, 1])
-        self.stats['bottom'] = np.average(measures[:, 3])
+        self.stats['top'] = np.average(measures[:, 1]).astype(float)
+        self.stats['bottom'] = np.average(measures[:, 3]).astype(float)
         self.stats['left'] = np.min(measures[:, 0])
         self.stats['right'] = np.max(measures[:, 2])
         self.stats['center'] = self.stats['top'] + \
@@ -102,7 +103,13 @@ class Staff():
 
     def toDict(self):
         # TODO
-        pass
+        dictionary = {}
+        dictionary['type'] = 'staff'
+        # Convert to primitive types
+        dictionary['objects'] = {}
+        dictionary['objects']['top'] = self.stats['top']
+        dictionary['objects']['bottom'] = self.stats['bottom']
+        return dictionary
 
 
 class Streamable():
@@ -133,7 +140,7 @@ class SystemStaff():
         self.staves = staves
         self.boundaries = yboundaries
         measure_boxes = []
-        for measure in staves.measures:
+        for measure in staves[0].measures:
             measure_boxes.append(
                 np.array([measure[0], yboundaries[0], measure[2], yboundaries[1]]))
         self.measure_boxes = np.asarray(measure_boxes)
@@ -160,8 +167,15 @@ class SystemStaff():
         # TODO add boundaries and staffs
         dictionary = {}
         dictionary['type'] = 'StaffSystem'
-        dictionary['objects'] = {idx: obj.toDict()
-                                 for idx, obj in enumerate(self.measures)}
+        dictionary['objects'] = {}
+        dictionary['objects']['measures'] = {idx: obj.toDict()
+                                             for idx, obj in enumerate(self.measures)}
+        dictionary['objects']['staffs'] = {
+            idx: obj.toDict() for idx, obj in enumerate(np.array([staff for staff in self.staves]))}
+        dictionary['objects']['boundaries'] = {
+            'ymin' : self.boundaries[0].astype(float),
+            'ymax' : self.boundaries[1].astype(float),
+        }
         return dictionary
     # TODO
 
@@ -241,8 +255,8 @@ class Song():
         Serialize the song into a JSON string
         # TODO
         '''
-        
-        return self.__dict__
+
+        return json.dumps(self.toDict())
 
 
 class SongFactory():
@@ -384,7 +398,7 @@ class SongFactory():
 
         for idx, group in enumerate(groups):
             systemStaffs.append(SystemStaff(
-                self.staves[idx], boundaries[idx], group))
+                [self.staves[idx]], boundaries[idx], group))
 
         self.song = Song(systemStaffs, self.image)
 

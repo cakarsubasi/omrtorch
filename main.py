@@ -45,7 +45,10 @@ def main():
     songFactory = omrmodules.semantics.SystemObjects.SongFactory(image[0], measure_dict[0], object_dict[0])
 
     # Write to JSON
+    songstring = songFactory.song.toJSON()
 
+    with open("song.json", "w") as wb:
+        wb.write(songstring)
     
     print('done')
     pass
