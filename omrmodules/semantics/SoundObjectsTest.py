@@ -1,4 +1,4 @@
-from SoundObjects import *
+from .SoundObjects import *
 import music21 as m21
 
 def main():

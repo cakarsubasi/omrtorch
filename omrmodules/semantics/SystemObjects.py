@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 import torch
 import numpy as np
 import music21
-import SoundObjects
+from . import SoundObjects
 from functools import total_ordering
 
 _notes = ["noteheadFull", "noteheadHalf", "noteheadWhole"]

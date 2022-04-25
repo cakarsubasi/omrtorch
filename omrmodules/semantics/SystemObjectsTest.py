@@ -4,7 +4,7 @@ import pickle
 import torch
 import cv2 as cv
 
-import SystemObjects
+from . import SystemObjects
 
 def main(root: str):
 
