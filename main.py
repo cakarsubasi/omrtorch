@@ -3,6 +3,7 @@ import os
 import omrmodules
 import torch
 import cv2 as cv
+import pickle
 
 import numpy as np
 
@@ -49,6 +50,9 @@ def main():
 
     with open("song.json", "w") as wb:
         wb.write(songstring)
+
+    with open("song.dictionary", "wb") as wb:
+        pickle.dump(songFactory.song, wb)
     
     print('done')
     pass
