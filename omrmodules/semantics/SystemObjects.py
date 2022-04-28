@@ -137,18 +137,17 @@ class SystemStaff():
         # TODO handle two staff systems
         self.staves = staves
         self.boundaries = yboundaries
-        measure_boxes = []
-        for measure in staves[0].measures:
-            measure_boxes.append(
-                np.array([measure[0], yboundaries[0], measure[2], yboundaries[1]]))
-        self.measure_boxes = np.asarray(measure_boxes)
+        self.measure_boxes = staves[0].measures.copy()
+        self.measure_boxes[:,1] = yboundaries[0]
+        self.measure_boxes[:,3] = yboundaries[1]
 
         self.objects = _objectify(objects)
         self.objects.sort()
 
         # List of measures in order
         measures = []
-        for measure in measure_boxes:
+        for measure in self.measure_boxes:
+            print(measure)
             objects = list(
                 filter(lambda obj: measure[0] <= obj.x < measure[2], self.objects))
             measures.append(Measure(boundaries=measure, objects=objects))
@@ -328,6 +327,7 @@ class SongFactory():
                 staves.append(nextstaff)
                 staves[-1].append(staff_measures[i])
 
+        staves = process_measures2(staves)
         # Measure processing
         for staff in staves:
             staff.measures = process_measures(staff.measures)
@@ -503,3 +503,37 @@ def process_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
     measures[1:, 0], measures[:-1, 2] = avgs, avgs
 
     return measures
+
+def process_measures2(staves: Tuple[Staff]):
+    '''
+    Detects large gaps in staves and fills them with synthetic measures
+    '''
+    grouped = [staff.measures for staff in staves]
+    ungrouped = np.vstack(grouped)
+    left_limit = np.min(ungrouped[:,0])
+    right_limit = np.max(ungrouped[:,2])
+    mingap = np.average(ungrouped[:,2] - ungrouped[:,0])/2
+    for gid, group in enumerate(grouped):
+        top = np.average(group[:,1])
+        bottom = np.average(group[:,3])
+        for idx, measure in enumerate(group):
+            if idx == 0: # check left of the first detection
+                if measure[0] > left_limit + mingap:
+                    synth = np.array([left_limit, top, measure[0], bottom])
+                    group = np.vstack([group, synth])
+            if idx == len(group) - 1: # check right of the last detection
+                if measure[2] < right_limit - mingap:
+                    synth = np.array([measure[2], top, right_limit, bottom])
+                    group = np.vstack([group, synth])
+            else: # check between this detection and the next
+                if group[idx+1][0] - measure[2] > mingap:
+                    synth = np.array([measure[2], top, group[idx+1][0], bottom])
+                    group = np.vstack([group, synth])
+            grouped[gid] = group
+
+    for idx in range(len(staves)):
+        sort_order = np.argsort(grouped[idx][:,0])
+        grouped[idx] = grouped[idx][sort_order]
+        staves[idx].measures = grouped[idx]
+
+    return staves
