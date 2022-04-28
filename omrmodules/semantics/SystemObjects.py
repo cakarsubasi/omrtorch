@@ -25,9 +25,6 @@ class Staff():
     stats: dict of information regarding the 
     '''
 
-    # Constant to decide whether to include or reject a measure
-    TOLERANCE = 0.01
-
     def __init__(self, measureObj: np.array = None):
         self.measures = np.array([])
         self.stats = {
@@ -46,13 +43,14 @@ class Staff():
             self.measures = np.expand_dims(measureObj, axis=0)
             return True
         self._calculateStats()
-        top = measureObj[1]
-        bottom = measureObj[3]
-        if np.abs(self.stats['top'] - top) > self.TOLERANCE or np.abs(self.stats['bottom'] - bottom) > self.TOLERANCE:
-            return False
-        else:
+        # accept a measure if its center is inside the top and bottom
+        # of existing averaged measures
+        center = (measureObj[1] + measureObj[3])/2
+        if self.stats['top'] < center < self.stats['bottom']:
             self.measures = np.vstack([self.measures, measureObj])
             return True
+        else:
+            return False
 
     def __lt__(self, o):
         self_center = self.getStats()['center']
@@ -173,8 +171,8 @@ class SystemStaff():
         dictionary['objects']['staffs'] = {
             idx: obj.toDict() for idx, obj in enumerate(np.array([staff for staff in self.staves]))}
         dictionary['objects']['boundaries'] = {
-            'ymin' : self.boundaries[0].astype(float),
-            'ymax' : self.boundaries[1].astype(float),
+            'ymin': self.boundaries[0].astype(float),
+            'ymax': self.boundaries[1].astype(float),
         }
         return dictionary
     # TODO
@@ -401,10 +399,6 @@ class SongFactory():
                 [self.staves[idx]], boundaries[idx], group))
 
         self.song = Song(systemStaffs, self.image)
-
-    def visualize(self):
-        # TODO
-        pass
 
 
 def get_staff_boundaries(measure_centers):
