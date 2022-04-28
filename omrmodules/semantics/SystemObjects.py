@@ -147,7 +147,6 @@ class SystemStaff():
         # List of measures in order
         measures = []
         for measure in self.measure_boxes:
-            print(measure)
             objects = list(
                 filter(lambda obj: measure[0] <= obj.x < measure[2], self.objects))
             measures.append(Measure(boundaries=measure, objects=objects))
