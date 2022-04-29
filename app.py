@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image
 from flask import Flask, request
 
-#curl -X POST -F "file=@/Users/abdullahkucuk/input_pic.jpg" http://localhost:5000/predict for send input from terminal
+#curl -X POST -F "file=@/Users/abdullahkucuk/input_pic.jpg" http://localhost:5000/predict to send input from terminal
 app = Flask(__name__)
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 MODEL_MEASURE = os.path.join('saved_models', 'muscima_measures.pt')
