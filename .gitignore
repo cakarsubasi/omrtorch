@@ -29,3 +29,5 @@ data/
 
 # Checkpoints
 checkpoints/
+saved_models/.DS_Store
+.DS_Store
