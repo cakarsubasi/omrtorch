@@ -249,9 +249,7 @@ class Song():
     def toJSON(self):
         '''
         Serialize the song into a JSON string
-        # TODO
         '''
-
         return json.dumps(self.toDict())
 
 
@@ -484,8 +482,6 @@ def process_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
     New list has no gaps and overlaps and extends across the entire staff
     '''
     # TODO: batch suppression
-
-    # TODO: detect large gaps
 
     # merge measures
     sort_order = np.argsort(measures[:, 0])
