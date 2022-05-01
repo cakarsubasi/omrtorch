@@ -73,7 +73,6 @@ def processnotesheet(image: np.array) -> np.array:
 
     # Compute target image size
     h, w = image.shape[:2]
-    print(scale)
     
     dst_w = int(w * scale)
     dst_h = int(h * scale)

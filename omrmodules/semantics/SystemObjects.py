@@ -310,19 +310,15 @@ class SongFactory():
         sort_order = np.argsort(system_measures[:, 1])
         system_measures = system_measures[sort_order]
 
+        # Detect system groups TODO
+        system_groups = detect_systems(system_measures, staff_measures)
+
         self.system_measures = system_measures
         self.staff_measures = staff_measures
+        self.system_groups = system_groups
 
         # Set up staffs
-        staves = []
-        staves.append(Staff())
-        for i in range(staff_measures.shape[0]):
-            if staves[-1].append(staff_measures[i]) is True:
-                pass
-            else:
-                nextstaff = Staff()
-                staves.append(nextstaff)
-                staves[-1].append(staff_measures[i])
+        staves = generate_staffs(self.staff_measures)
 
         staves = process_measures2(staves)
         # Measure processing
@@ -398,6 +394,22 @@ class SongFactory():
         self.song = Song(systemStaffs, self.image)
 
 
+
+def generate_staffs(staff_measures):
+    '''
+    Generates staff objects given some staff measures
+    '''
+    staves: Tuple[Staff] = []
+    staves.append(Staff())
+    for i in range(staff_measures.shape[0]):
+        if staves[-1].append(staff_measures[i]) is True:
+            pass
+        else:
+            nextstaff = Staff()
+            staves.append(nextstaff)
+            staves[-1].append(staff_measures[i])
+    return staves
+
 def get_staff_boundaries(measure_centers):
     '''
     returns an Nx2 ndarray 
@@ -412,7 +424,7 @@ def get_staff_boundaries(measure_centers):
     return np.stack([x3, x4], axis=1)
 
 
-def detect_systems():
+def detect_systems(systems: np.ndarray, measures: np.ndarray):
     '''
     Idea: check overlap of measures and system measures
     and return system measures as Tuple[Tuple[int]]
@@ -422,7 +434,7 @@ def detect_systems():
 
     # TODO
     '''
-    pass
+    return None
 
 
 def denormalize_bboxes(bboxes, image):
