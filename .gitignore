@@ -31,3 +31,6 @@ data/
 checkpoints/
 saved_models/.DS_Store
 .DS_Store
+
+# numpy pickle file
+*.npy

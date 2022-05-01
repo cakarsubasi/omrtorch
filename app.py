@@ -35,17 +35,22 @@ def transform_image(image_bytes):
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    if request.method == 'POST':
-        file = request.files['file']
-        img_bytes = file.read()
-        image = transform_image(img_bytes)
-        measure_dict = model_measures(image)
-        object_dict = model_objects(image)
-        songFactory = omrmodules.semantics.SystemObjects.SongFactory(image[0], measure_dict[0], object_dict[0])
-        songstring = songFactory.song.toJSON()
-        with open("song.json", "w") as wb:
-            wb.write(songstring)
-        print('done')
+    try:
+        if request.method == 'POST':
+            file = request.files['file']
+            img_bytes = file.read()
+            image = transform_image(img_bytes)
+            measure_dict = model_measures(image)
+            object_dict = model_objects(image)
+            songFactory = omrmodules.semantics.SystemObjects.SongFactory(image[0], measure_dict[0], object_dict[0])
+            songstring = songFactory.song.toJSON()
+            with open("song.json", "w") as wb:
+                wb.write(songstring)
+            print('done')
+    except:
+        # TODO: the server needs to not fail if literally any function call returns an invalid value or throws an expception
+        # In this case, the server needs to notify the Android app telling the user an exception has occurred. There should
+        # likely be more try and catch clauses included to handle failures at different parts.
         pass
     return 'done \n'    
 
