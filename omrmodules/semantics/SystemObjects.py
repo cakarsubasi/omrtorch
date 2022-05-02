@@ -221,9 +221,10 @@ class Song():
     Keeps track of staff regions and assigns notes to these regions
     '''
 
-    def __init__(self, systems: Tuple[SystemStaff], image: np.array):
+    def __init__(self, systems: Tuple[SystemStaff], image: np.array, one_handed: True):
         self.systems = systems
         self.image = image
+        self.one_handed = one_handed
 
     def toDict(self):
         return {idx: system.__dict__ for idx, system in enumerate(self.__dict__['systems'])}
@@ -237,6 +238,7 @@ class Song():
         dictionary['type'] = 'Song'
         dictionary['objects'] = {idx: system.toDict()
                                  for idx, system in enumerate(self.systems)}
+        dictionary['one_handed'] = self.one_handed
         return dictionary
 
     def toStream(self):
@@ -293,7 +295,8 @@ class SongFactory():
 
         # Detect system groups TODO
         # system measures replace staff measures on one handed scores
-        if (is_one_handed(system_measures, staff_measures)):
+        one_handed = is_one_handed(system_measures, staff_measures)
+        if (one_handed):
             staff_measures = np.concatenate(
                 [system_measures, staff_measures], axis=0)
 
@@ -343,7 +346,7 @@ class SongFactory():
             systemStaffs.append(SystemStaff(
                 [self.staves[idx]], boundaries[idx], group))
 
-        self.song = Song(systemStaffs, self.image)
+        self.song = Song(systemStaffs, self.image, one_handed=one_handed)
 
     def process_measure_dict(measure_dict, tuple_height_width, threshold=0.75):
         '''
@@ -562,12 +565,14 @@ def is_one_handed(system_measures, staff_measures):
     Determine if score has one staff systems
     or two staff systems.
     '''
-
     # Mandatory assumption
-    if system_measures.size == 0 or staff_measures.size == 0:
+    if system_measures.size <= 1 or staff_measures.size <= 1:
         return True
-
-    system_heights = None
-    staff_heights = None
+    
+    system_height = np.average(system_measures[:,3]-system_measures[:,1])
+    staff_height = np.average(staff_measures[:,3]-staff_measures[:,1])
+    # 
+    if staff_height*1.25 > system_height:
+        return True
 
     return False
