@@ -3,7 +3,10 @@ import os
 import omrmodules
 import torch
 import cv2 as cv
-import pickle
+import glob
+from PIL import Image
+
+from omrmodules.semantics.SystemObjects import SongFactory
 
 import numpy as np
 
@@ -39,50 +42,28 @@ class OMREngine():
         image = np.expand_dims(image, 0)
         image = (image / 255.0).astype(np.float32)
         return image
-        
 
-def main():
 
-    ###
-    # preparation
-    IMAGE = os.path.join('samples', 'aural_tests.jpg')
-
-    # load models
+# Test the extractor on muscima, the extractor should
+# get through the entire dataset without crashing
+if __name__ == '__main__':
+    imagepath = os.path.join('muscima/v2.0/data/images')
+    imgs = sorted(glob.glob(os.path.join(imagepath, '*.png')))
     omrengine = OMREngine()
+    imagenum = len(imgs)
+    limit = imagenum
+
+    for idx, img in enumerate(imgs):
+        print(f"Processing {idx+1}/{limit}")
+        sample_image = cv.imread(img)
+        sample_image = np.average(sample_image, axis=2)
+        measure_dict, object_dict = omrengine(sample_image)
+        SongFactory(sample_image, measure_dict, object_dict)
+        if idx == limit - 1:
+            break
+  
     
-    ###
-    #
-
-    # read image
-    image = cv.imread(IMAGE)
-
-    # pre-process image
-    image = OMREngine.preprocess(image)
-    measure_dict, object_dict = omrengine(image)
-
-    # pass results to SongFactory
-    songFactory = omrmodules.semantics.SystemObjects.SongFactory(image, measure_dict, object_dict)
-
-    # Write to JSON
-    songstring = songFactory.song.toJSON()
-
-    with open("song.json", "w") as wb:
-        wb.write(songstring)
-
-    with open("song.dictionary", "wb") as wb:
-        pickle.dump(songFactory.song, wb)
     
-    print('done')
+    #omrengine(sample_image)
+
     pass
-
-
-if __name__ == "__main__":
-    import argparse
-
-    #parser = argparse.ArgumentParser(description='OMR Predictor')
-    #parser.add_argument('file', type=str, help='File to predict')
-    #parser.add_argument('--dst', type=str, default='./output', help='output directory')
-#
-    #args = parser.parse_args()
-
-    main()

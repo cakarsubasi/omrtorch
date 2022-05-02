@@ -1,4 +1,5 @@
 from typing import Optional, Tuple
+from sympy import false
 import torch
 import numpy as np
 import json
@@ -138,8 +139,8 @@ class SystemStaff():
         self.staves = staves
         self.boundaries = yboundaries
         self.measure_boxes = staves[0].measures.copy()
-        self.measure_boxes[:,1] = yboundaries[0]
-        self.measure_boxes[:,3] = yboundaries[1]
+        self.measure_boxes[:, 1] = yboundaries[0]
+        self.measure_boxes[:, 3] = yboundaries[1]
 
         self.objects = _objectify(objects)
         self.objects.sort()
@@ -220,9 +221,10 @@ class Song():
     Keeps track of staff regions and assigns notes to these regions
     '''
 
-    def __init__(self, systems: Tuple[SystemStaff], image: np.array):
+    def __init__(self, systems: Tuple[SystemStaff], image: np.array, one_handed: True):
         self.systems = systems
         self.image = image
+        self.one_handed = one_handed
 
     def toDict(self):
         return {idx: system.__dict__ for idx, system in enumerate(self.__dict__['systems'])}
@@ -236,6 +238,7 @@ class Song():
         dictionary['type'] = 'Song'
         dictionary['objects'] = {idx: system.toDict()
                                  for idx, system in enumerate(self.systems)}
+        dictionary['one_handed'] = self.one_handed
         return dictionary
 
     def toStream(self):
@@ -264,6 +267,8 @@ class SongFactory():
     def __init__(self, image, measuredetections, objectdetections, label_list=None):
 
         self.image = image
+        if len(image.shape) == 2:
+            image = np.expand_dims(image, 0)
         self.height, self.width = image.shape[1:3]
         self.system_measures = None
         self.staff_measures = None
@@ -278,56 +283,35 @@ class SongFactory():
         # STAFF HANDLING
         ####
         # filter unreliable results
-        best_boxes = torch.where(
-            measuredetections['scores'] > self.MEASURE_THRESHOLD)
 
-        detections_reduced = {}
-        detections_reduced['boxes'] = measuredetections['boxes'][best_boxes]
-        detections_reduced['labels'] = measuredetections['labels'][best_boxes]
-        detections_reduced['scores'] = measuredetections['scores'][best_boxes]
-
-        # get system measures and staff measures
-        system_measures = detections_reduced['boxes'][torch.where(
-            detections_reduced['labels'] == 1)]
-        staff_measures = detections_reduced['boxes'][torch.where(
-            detections_reduced['labels'] == 2)]
-
-        # move tensors to CPU
-        system_measures = system_measures.cpu().detach().numpy()
-        staff_measures = staff_measures.cpu().detach().numpy()
-
-        # normalize
-        staff_measures[:, [1, 3]] = staff_measures[:, [1, 3]]/self.height
-        staff_measures[:, [0, 2]] = staff_measures[:, [0, 2]]/self.width
-
-        system_measures[:, [1, 3]] = system_measures[:, [1, 3]]/self.height
-        system_measures[:, [0, 2]] = system_measures[:, [0, 2]]/self.width
+        system_measures, staff_measures = \
+            SongFactory.process_measure_dict(
+                measuredetections, [self.height, self.width], self.MEASURE_THRESHOLD)
 
         # sort by y axis (ascending)
-        sort_order = np.argsort(staff_measures[:, 1])
-        staff_measures = staff_measures[sort_order]
+        def y_axis_sort(x): return x[np.argsort(x[:, 1]+x[:, 3])]
+        staff_measures = y_axis_sort(staff_measures)
+        system_measures = y_axis_sort(system_measures)
 
-        sort_order = np.argsort(system_measures[:, 1])
-        system_measures = system_measures[sort_order]
+        # Detect system groups TODO
+        # system measures replace staff measures on one handed scores
+        one_handed = is_one_handed(system_measures, staff_measures)
+        if (one_handed):
+            staff_measures = np.concatenate(
+                [system_measures, staff_measures], axis=0)
+
+        system_groups = detect_systems(system_measures, staff_measures)
 
         self.system_measures = system_measures
         self.staff_measures = staff_measures
+        self.system_groups = system_groups
 
         # Set up staffs
-        staves = []
-        staves.append(Staff())
-        for i in range(staff_measures.shape[0]):
-            if staves[-1].append(staff_measures[i]) is True:
-                pass
-            else:
-                nextstaff = Staff()
-                staves.append(nextstaff)
-                staves[-1].append(staff_measures[i])
-
-        staves = process_measures2(staves)
+        staves = generate_staffs(self.staff_measures)
+        staves = detect_and_fix_large_gaps(staves)
         # Measure processing
         for staff in staves:
-            staff.measures = process_measures(staff.measures)
+            staff.measures = merge_measures(staff.measures)
 
         self.staves = staves
 
@@ -336,45 +320,12 @@ class SongFactory():
             [staff.stats['center'] for staff in self.staves])
         self.boundaries = boundaries
 
-        # TODO: system detection
-
         ####
         # OBJECT HANDLING
         ####
 
-        object_boxes = objectdetections['boxes'].cpu().detach().numpy()
-        object_labels = objectdetections['labels'].cpu().detach().numpy()
-        object_labels = np.asarray([label_list[idx-1]
-                                   for idx in object_labels])
-
-        # this is only for gt boxes, real detections will always have scores attached
-        if 'scores' not in objectdetections:
-            object_scores = np.ones(shape=object_labels.shape)
-        else:
-            object_scores = objectdetections['scores'].cpu().detach().numpy()
-
-        # Filter unreliable results
-        best_boxes = np.where(
-            object_scores > self.OBJECT_THRESHOLD)
-
-        object_boxes = object_boxes[best_boxes]
-        object_labels = object_labels[best_boxes]
-        object_scores = object_scores[best_boxes]
-
-        # normalize
-        object_boxes[:, [1, 3]] = object_boxes[:, [1, 3]]/self.height
-        object_boxes[:, [0, 2]] = object_boxes[:, [0, 2]]/self.width
-
-        # sort by y-axis (ascending)
-        sort_order = np.argsort((object_boxes[:, 1]+object_boxes[:, 3]))
-
-        object_boxes = object_boxes[sort_order]
-        object_labels = object_labels[sort_order]
-        object_scores = object_scores[sort_order]
-
-        self.objects['boxes'] = object_boxes
-        self.objects['labels'] = object_labels
-        self.objects['scores'] = object_scores
+        self.objects = SongFactory.process_object_dict(objectdetections, [self.height, self.width],
+                                                       label_list=label_list, threshold=self.OBJECT_THRESHOLD)
 
         # generate SystemMeasures
         groups = []
@@ -395,7 +346,102 @@ class SongFactory():
             systemStaffs.append(SystemStaff(
                 [self.staves[idx]], boundaries[idx], group))
 
-        self.song = Song(systemStaffs, self.image)
+        self.song = Song(systemStaffs, self.image, one_handed=one_handed)
+
+    def process_measure_dict(measure_dict, tuple_height_width, threshold=0.75):
+        '''
+        Initial preprocessing:
+        Move tensors to CPU, get rid of bad boxes, normalize the box locations to
+        [0,1] range.
+        '''
+        best_boxes = torch.where(
+            measure_dict['scores'] > threshold)
+
+        detections_reduced = {}
+        detections_reduced['boxes'] = measure_dict['boxes'][best_boxes]
+        detections_reduced['labels'] = measure_dict['labels'][best_boxes]
+        detections_reduced['scores'] = measure_dict['scores'][best_boxes]
+
+        # get system measures and staff measures
+        system_measures = detections_reduced['boxes'][torch.where(
+            detections_reduced['labels'] == 1)]
+        staff_measures = detections_reduced['boxes'][torch.where(
+            detections_reduced['labels'] == 2)]
+
+        # move tensors to CPU
+        system_measures = system_measures.cpu().detach().numpy()
+        staff_measures = staff_measures.cpu().detach().numpy()
+
+        # normalize
+        staff_measures[:, [1, 3]] = staff_measures[:,
+                                                   [1, 3]]/tuple_height_width[0]
+        staff_measures[:, [0, 2]] = staff_measures[:,
+                                                   [0, 2]]/tuple_height_width[1]
+
+        system_measures[:, [1, 3]] = system_measures[:,
+                                                     [1, 3]]/tuple_height_width[0]
+        system_measures[:, [0, 2]] = system_measures[:,
+                                                     [0, 2]]/tuple_height_width[1]
+
+        return system_measures, staff_measures
+
+    def process_object_dict(object_dict, tuple_height_width, label_list=__pitch_objects__, threshold=0.0):
+        '''
+        Initial preprocessing:
+        Move tensors to CPU, get rid of bad boxes, normalize the box locations to
+        [0,1] range 
+        '''
+        object_boxes = object_dict['boxes'].cpu().detach().numpy()
+        object_labels = object_dict['labels'].cpu().detach().numpy()
+        object_labels = np.asarray([label_list[idx-1]
+                                   for idx in object_labels])
+        # this is only for gt boxes, real detections will always have scores attached
+        if 'scores' not in object_dict:
+            object_scores = np.ones(shape=object_labels.shape)
+        else:
+            object_scores = object_dict['scores'].cpu().detach().numpy()
+
+        # Filter unreliable results
+        best_boxes = np.where(
+            object_scores > threshold)
+
+        object_boxes = object_boxes[best_boxes]
+        object_labels = object_labels[best_boxes]
+        object_scores = object_scores[best_boxes]
+
+        # normalize
+        object_boxes[:, [1, 3]] = object_boxes[:, [1, 3]]/tuple_height_width[0]
+        object_boxes[:, [0, 2]] = object_boxes[:, [0, 2]]/tuple_height_width[1]
+
+        # sort by y-axis (ascending)
+
+        sort_order = np.argsort((object_boxes[:, 1]+object_boxes[:, 3]))
+
+        object_boxes = object_boxes[sort_order]
+        object_labels = object_labels[sort_order]
+        object_scores = object_scores[sort_order]
+
+        objects = {}
+        objects['boxes'] = object_boxes
+        objects['labels'] = object_labels
+        objects['scores'] = object_scores
+        return objects
+
+
+def generate_staffs(staff_measures):
+    '''
+    Generates staff objects given some staff measures
+    '''
+    staves: Tuple[Staff] = []
+    staves.append(Staff())
+    for i in range(staff_measures.shape[0]):
+        if staves[-1].append(staff_measures[i]) is True:
+            pass
+        else:
+            nextstaff = Staff()
+            staves.append(nextstaff)
+            staves[-1].append(staff_measures[i])
+    return staves
 
 
 def get_staff_boundaries(measure_centers):
@@ -412,7 +458,7 @@ def get_staff_boundaries(measure_centers):
     return np.stack([x3, x4], axis=1)
 
 
-def detect_systems():
+def detect_systems(systems: np.ndarray, measures: np.ndarray):
     '''
     Idea: check overlap of measures and system measures
     and return system measures as Tuple[Tuple[int]]
@@ -422,7 +468,7 @@ def detect_systems():
 
     # TODO
     '''
-    pass
+    return None
 
 
 def denormalize_bboxes(bboxes, image):
@@ -455,31 +501,9 @@ def _objectify(objectsdict):
     return objects
 
 
-def process_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
+def merge_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
     '''
-    measure handling ideas:
-    There are two possibilities
-    Measures are the same length on every staff or measures are different length in each stuff
-
-    Latter case is more general.
-
-    Assume that we detected a leftmost and rightmost measure. Use these as the min and max values.
-
-    For each staff, check all of the "gaps"
-
-    Add a syntethic measure if the gap is larger than expected
-    ////
-    Batch suppression?
-    If there are two measures with close left and right boundaries, average them
-
-    If there are two measures with close left OR right boundaries, there is ambiguity
-    (the longer one is more likely to be the right detection due to some note bars being detected)
-
-    Takes a list of measures in the same staff
-
-    Returns a "processed" list of measures
-
-    New list has no gaps and overlaps and extends across the entire staff
+    Removes small overlaps and gaps between measures boxes.
     '''
     # TODO: batch suppression
 
@@ -499,36 +523,56 @@ def process_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
 
     return measures
 
-def process_measures2(staves: Tuple[Staff]):
+
+def detect_and_fix_large_gaps(staves: Tuple[Staff]):
     '''
     Detects large gaps in staves and fills them with synthetic measures
     '''
     grouped = [staff.measures for staff in staves]
     ungrouped = np.vstack(grouped)
-    left_limit = np.min(ungrouped[:,0])
-    right_limit = np.max(ungrouped[:,2])
-    mingap = np.average(ungrouped[:,2] - ungrouped[:,0])/2
+    left_limit = np.min(ungrouped[:, 0])
+    right_limit = np.max(ungrouped[:, 2])
+    mingap = np.average(ungrouped[:, 2] - ungrouped[:, 0])/2
     for gid, group in enumerate(grouped):
-        top = np.average(group[:,1])
-        bottom = np.average(group[:,3])
+        top = np.average(group[:, 1])
+        bottom = np.average(group[:, 3])
         for idx, measure in enumerate(group):
-            if idx == 0: # check left of the first detection
+            if idx == 0:  # check left of the first detection
                 if measure[0] > left_limit + mingap:
                     synth = np.array([left_limit, top, measure[0], bottom])
                     group = np.vstack([group, synth])
-            if idx == len(group) - 1: # check right of the last detection
+            if idx == len(group) - 1:  # check right of the last detection
                 if measure[2] < right_limit - mingap:
                     synth = np.array([measure[2], top, right_limit, bottom])
                     group = np.vstack([group, synth])
-            else: # check between this detection and the next
+            else:  # check between this detection and the next
                 if group[idx+1][0] - measure[2] > mingap:
-                    synth = np.array([measure[2], top, group[idx+1][0], bottom])
+                    synth = np.array(
+                        [measure[2], top, group[idx+1][0], bottom])
                     group = np.vstack([group, synth])
             grouped[gid] = group
 
     for idx in range(len(staves)):
-        sort_order = np.argsort(grouped[idx][:,0])
+        sort_order = np.argsort(grouped[idx][:, 0])
         grouped[idx] = grouped[idx][sort_order]
         staves[idx].measures = grouped[idx]
 
     return staves
+
+
+def is_one_handed(system_measures, staff_measures):
+    '''
+    Determine if score has one staff systems
+    or two staff systems.
+    '''
+    # Mandatory assumption
+    if system_measures.size <= 1 or staff_measures.size <= 1:
+        return True
+    
+    system_height = np.average(system_measures[:,3]-system_measures[:,1])
+    staff_height = np.average(staff_measures[:,3]-staff_measures[:,1])
+    # 
+    if staff_height*1.25 > system_height:
+        return True
+
+    return False
