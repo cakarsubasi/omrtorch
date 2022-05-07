@@ -126,7 +126,7 @@ def visualize_bboxes(image, target, labels=None, threshold=0.5):
     labels_list_str = None
     if labels is not None:
         labels_list_str = list(labels[val] for val in labels_sliced)
-        colors_list = list(colors[val] for val in labels_sliced)
+        colors_list = list(colors[val % len(colors)] for val in labels_sliced)
     sample_image = (image*255).type(torch.ByteTensor)
 
     sample_im_with_bounding_boxes = draw_bounding_boxes(sample_image, boxes_sliced, labels_list_str, colors=colors_list, width=3, font_size=32)
