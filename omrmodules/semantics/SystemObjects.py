@@ -178,7 +178,7 @@ class SystemStaff():
 
     def toStream(self):
         # get staff position and staff gap
-        # self.staves[0].
+        
         pass
 
 
@@ -211,6 +211,7 @@ class Measure():
         return dictionary
 
     def toStream(self):
+        relpos = lambda y, bottom, gap: round(2*(bottom - y)/gap)
 
         pass
 
@@ -300,11 +301,9 @@ class SongFactory():
             staff_measures = np.concatenate(
                 [system_measures, staff_measures], axis=0)
 
-        system_groups = detect_systems(system_measures, staff_measures)
-
         self.system_measures = system_measures
         self.staff_measures = staff_measures
-        self.system_groups = system_groups
+
 
         # Set up staffs
         staves = generate_staffs(self.staff_measures)
