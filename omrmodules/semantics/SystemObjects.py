@@ -458,19 +458,6 @@ def get_staff_boundaries(measure_centers):
     return np.stack([x3, x4], axis=1)
 
 
-def detect_systems(systems: np.ndarray, measures: np.ndarray):
-    '''
-    Idea: check overlap of measures and system measures
-    and return system measures as Tuple[Tuple[int]]
-
-    ie, you have four staffs and they form two systems,
-    return  [[0, 1], [2, 3]]
-
-    # TODO
-    '''
-    return None
-
-
 def denormalize_bboxes(bboxes, image):
     if len(bboxes.shape) == 1:
         bboxes = np.expand_dims(bboxes, 0)

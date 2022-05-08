@@ -133,13 +133,13 @@ class Clef(glyph):
 def getNote(clef: Clef, relativepos: int) -> mnote.Note:
     '''
     Get music21 note based on Clef and relative position.
-
-    # TODO
     '''
     name: str = ''
 
     if (clef.type == 'gClef'):
         name = {
+            -4: 'a3',
+            -3: 'b3',
             -2: 'c4',
             -1: 'd4',
             0: 'e4',
@@ -159,43 +159,46 @@ def getNote(clef: Clef, relativepos: int) -> mnote.Note:
         pass
 
     elif (clef.type == 'fClef'):
-        # TODO: update this to be correct
         name = {
-            -2: 'c4',
-            -1: 'd4',
-            0: 'e4',
-            1: 'f4',
-            2: 'g4',
-            3: 'a4',
-            4: 'b4',
-            5: "c5",
-            6: "d5",
-            7: "e5",
-            8: "f5",
-            9: "g5",
-            10: "a5",
-            11: "b5",
-            12: "c6",
+            -4 : "c2",
+            -3 : "d2",
+            -2 : "e2",
+            -1 : "f2",
+            0  : "g2",
+            1  : "a2",
+            2  : "b2",
+            3  : "c3",
+            4  : "d3",
+            5  : "e3",
+            6  : "f3",
+            7  : "g3",
+            8  : "a3",
+            9  : "b3",
+            10 : "c4",
+            11 : "d4",
+            12 : "e4",
         }[relativepos]  
 
     elif (clef.type == 'cClef'):
         # TODO: update this to be correct
         name = {
-            -2: 'c4',
-            -1: 'd4',
-            0: 'e4',
-            1: 'f4',
-            2: 'g4',
-            3: 'a4',
-            4: 'b4',
-            5: "c5",
-            6: "d5",
-            7: "e5",
-            8: "f5",
-            9: "g5",
-            10: "a5",
-            11: "b5",
-            12: "c6",
+            -4  : "b2",
+            -3  : "c3",
+            -2  : "d3",
+            -1  : "e3",
+            0   : "f3",
+            1   : "g3",
+            2   : "a3",
+            3   : "b3",
+            4   : "c4",
+            5   : "d4",
+            6   : "e4",
+            7   : "f4",
+            8   : "g4",
+            9   : "a4",
+            10  : "b4",
+            11  : "c5",
+            12  : "d5",
         }[relativepos]  
 
     else:
