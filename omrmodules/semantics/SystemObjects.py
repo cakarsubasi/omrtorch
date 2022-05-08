@@ -100,6 +100,9 @@ class Staff():
             (self.stats['bottom'] - self.stats['top'])/2
         self.stats['num'] = measures.shape[0]
 
+    def getgap(self):
+        return (self.stats['bottom'] - self.stats['top'])/4.0
+
     def toDict(self):
         # TODO
         dictionary = {}
@@ -210,10 +213,13 @@ class Measure():
                                  for idx, obj in enumerate(self.objects)}
         return dictionary
 
-    def toStream(self):
-        relpos = lambda y, bottom, gap: round(2*(bottom - y)/gap)
+    def toStream(self, bottom, gap):
+        relpos = lambda y, b, g: round(2*(b - y)/g)
+        pose = []
+        for obj in self.objects:
+            pose.append(relpos(obj.y, bottom, gap))
+        return pose
 
-        pass
 
 
 class Song():

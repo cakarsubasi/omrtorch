@@ -130,13 +130,13 @@ class Clef(glyph):
         return dictionary
 
 
-def getNote(clef: Clef, relativepos: int) -> mnote.Note:
+def getNote(clef: str, relativepos: int) -> mnote.Note:
     '''
     Get music21 note based on Clef and relative position.
     '''
     name: str = ''
 
-    if (clef.type == 'gClef'):
+    if (clef == 'gClef'):
         name = {
             -4: 'a3',
             -3: 'b3',
@@ -158,7 +158,7 @@ def getNote(clef: Clef, relativepos: int) -> mnote.Note:
         }[relativepos]   
         pass
 
-    elif (clef.type == 'fClef'):
+    elif (clef == 'fClef'):
         name = {
             -4 : "c2",
             -3 : "d2",
@@ -179,7 +179,7 @@ def getNote(clef: Clef, relativepos: int) -> mnote.Note:
             12 : "e4",
         }[relativepos]  
 
-    elif (clef.type == 'cClef'):
+    elif (clef == 'cClef'):
         # TODO: update this to be correct
         name = {
             -4  : "b2",
