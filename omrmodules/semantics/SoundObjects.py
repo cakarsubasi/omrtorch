@@ -10,7 +10,7 @@ Classes to convert bounding boxes to staff measure relative coordinates
 __notes = ["noteheadFull", "noteheadHalf", "noteheadWhole"]
 __notelengths = ["Whole", "Half", "Quarter", "8th", "16th"]
 __accidentals = ["accidentalSharp", "accidentalFlat", "accidentalNatural"]
-__clefs = ['gCflef', 'fClef', 'cClef']
+__clefs = ['gClef', 'fClef', 'cClef']
 
 
 @total_ordering

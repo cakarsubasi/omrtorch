@@ -9,10 +9,10 @@ from functools import total_ordering
 
 _notes = ["noteheadFull", "noteheadHalf", "noteheadWhole"]
 _accidentals = ["accidentalSharp", "accidentalFlat", "accidentalNatural"]
-_clefs = ['gCflef', 'fClef', 'cClef']
+_clefs = ['gClef', 'fClef', 'cClef']
 
 __pitch_objects__ = ['noteheadFull', 'noteheadHalf', 'noteheadWhole', 'accidentalSharp', 'accidentalFlat', 'accidentalNatural',
-                     'gCflef', 'fClef', 'cClef']
+                     'gClef', 'fClef', 'cClef']
 
 
 @total_ordering
