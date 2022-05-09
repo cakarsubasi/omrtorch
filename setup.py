@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="omrtorch-cakarsubasi",
-    version="0.0.2",
+    version="0.0.3",
     author="Cem Akarsubasi",
     author_email="cemakarsubasi@gmail.com",
     description="Music semantics extractor built via PyTorch.",

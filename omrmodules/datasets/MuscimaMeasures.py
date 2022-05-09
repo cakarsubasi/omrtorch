@@ -115,7 +115,7 @@ def get_transform(train):
 def visualize_bboxes(image, target, labels=None, threshold=0.5):
     if labels is None:
       labels = {1 : 'system_measures', 2: 'measures'}
-    colors = ['000000', 'red', 'blue', 'green', 'yellow']
+    colors = ['cyan', 'red', 'blue', 'green', 'yellow', 'orange']
     sample_boxes = target['boxes']
     sample_scores = target['scores']
     sample_labels = target['labels']
