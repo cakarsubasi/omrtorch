@@ -102,6 +102,9 @@ class Staff():
     def getgap(self):
         return (self.stats['bottom'] - self.stats['top'])/4.0
 
+    def getbot(self):
+        return self.stats['bottom']
+
     def toDict(self):
         # TODO
         dictionary = {}
@@ -130,7 +133,6 @@ class SystemStaff():
     Generates Measures and populate them with objects TODO
 
     '''
-
     def __init__(self, staves: Tuple[Staff], yboundaries: np.array, objects: dict = None):
         '''
         staves: staffs that belong to this system
@@ -180,7 +182,9 @@ class SystemStaff():
 
     def toStream(self):
         # get staff position and staff gap
-        
+        for measure in self.measures:
+            pass
+
         pass
 
 
@@ -251,9 +255,31 @@ class Song():
         '''
         Generate a music21 stream from object
         Get the SystemStaff streams and concat them
-        '''
 
-        pass
+        Hardcoded two handed
+        '''
+        m21soprano = music21.stream.Part()
+        m21bass = music21.stream.Part()
+        for idx, system in enumerate(self.systems):
+            clef = 'gClef' if idx % 2 == 0 else 'fClef'
+            measures = system.measures
+            bot = system.staves[0].getbot()
+            gap = system.staves[0].getgap()
+            m21staff = music21.stream.Stream()
+            for measure in measures:
+                glyphs = measure.objects
+                relposes = [note.relativePos(bot, gap) for note in glyphs]
+                noteSeq = [SoundObjects.getNote(clef, pos) for pos in relposes]
+                m21measure = music21.stream.Measure(noteSeq)
+                m21staff.append(m21measure)
+            if idx % 2 == 0:
+                m21soprano.append(m21staff)
+            else:
+                m21bass.append(m21staff)
+        m21score = music21.stream.Stream([m21soprano, m21bass])
+
+        return m21score
+
 
     def toJSON(self):
         '''
@@ -312,7 +338,8 @@ class SongFactory():
 
         # Set up staffs
         staves = generate_staffs(self.staff_measures)
-        staves = detect_and_fix_large_gaps(staves)
+        # TODO: fix this function
+        #staves = detect_and_fix_large_gaps(staves)
         # Measure processing
         for staff in staves:
             staff.measures = merge_measures(staff.measures)
@@ -518,6 +545,7 @@ def merge_measures(measures, xmin: float = 0.0, xmax: float = 1.0):
 def detect_and_fix_large_gaps(staves: Tuple[Staff]):
     '''
     Detects large gaps in staves and fills them with synthetic measures
+    TODO: Currently buggy, fix it.
     '''
     grouped = [staff.measures for staff in staves]
     ungrouped = np.vstack(grouped)

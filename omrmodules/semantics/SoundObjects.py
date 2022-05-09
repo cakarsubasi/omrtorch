@@ -156,8 +156,6 @@ def getNote(clef: str, relativepos: int) -> mnote.Note:
             11: "b5",
             12: "c6",
         }[relativepos]   
-        pass
-
     elif (clef == 'fClef'):
         name = {
             -4 : "c2",
@@ -178,7 +176,6 @@ def getNote(clef: str, relativepos: int) -> mnote.Note:
             11 : "d4",
             12 : "e4",
         }[relativepos]  
-
     elif (clef == 'cClef'):
         # TODO: update this to be correct
         name = {
