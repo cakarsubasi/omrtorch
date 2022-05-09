@@ -256,10 +256,11 @@ class Song():
         Generate a music21 stream from object
         Get the SystemStaff streams and concat them
 
-        Hardcoded two handed
+        Hardcoded for two handed and hardcoded for B-flat key signature
         '''
         m21soprano = music21.stream.Part()
         m21bass = music21.stream.Part()
+        kbf = music21.key.KeySignature(-1)
         for idx, system in enumerate(self.systems):
             clef = 'gClef' if idx % 2 == 0 else 'fClef'
             measures = system.measures
@@ -268,24 +269,53 @@ class Song():
             m21staff = music21.stream.Stream()
             for measure in measures:
                 glyphs = measure.objects
-                relposes = [note.relativePos(bot, gap) for note in glyphs]
+                relposes = [note.relativePos(bot, gap) for note in glyphs if note.__class__ is SoundObjects.Note]
                 noteSeq = [SoundObjects.getNote(clef, pos) for pos in relposes]
+                noteSeq = _normalizeDurations(noteSeq)
                 m21measure = music21.stream.Measure(noteSeq)
+                # apply key signature
+                for j in m21measure.recurse().notes:
+                    nStep = j.pitch.step
+                    rightAccidental = kbf.accidentalByStep(nStep)
+                    j.pitch.accidental = rightAccidental
+                acc_idx = [idx for idx, glyph in enumerate(
+                    glyphs) if glyph.__class__ is SoundObjects.Accidental]
+                # apply accidentals
+                for acc in acc_idx:
+                    if acc < len(m21measure.notes):
+                        if glyphs[acc].type == 'accidentalSharp':
+                            m21measure.notes[acc].pitch.accidental = music21.pitch.Accidental(1)
+                        elif glyphs[acc].type == 'accidentalFlat':
+                            m21measure.notes[acc].pitch.accidental = music21.pitch.Accidental(-1)
+                        elif glyphs[acc].type == 'accidentalNatural':
+                            m21measure.notes[acc].pitch.accidental = music21.pitch.Accidental(0)
                 m21staff.append(m21measure)
             if idx % 2 == 0:
                 m21soprano.append(m21staff)
             else:
                 m21bass.append(m21staff)
+        m21soprano.keySignature = kbf
+        m21bass.keySignature = kbf
         m21score = music21.stream.Stream([m21soprano, m21bass])
 
         return m21score
-
 
     def toJSON(self):
         '''
         Serialize the song into a JSON string
         '''
         return json.dumps(self.toDict())
+
+def _normalizeDurations(notelist):
+    n = len(notelist)
+    if n == 4:
+        pass
+    elif n < 4:
+        notelist[n-1].duration = music21.duration.Duration(5.0-n)
+    elif 9 > n > 4:
+        for i in range((n-4)*2):
+            notelist[-i-1].duration = music21.duration.Duration(0.5)
+    return notelist
 
 
 class SongFactory():
