@@ -368,8 +368,7 @@ class SongFactory():
 
         # Set up staffs
         staves = generate_staffs(self.staff_measures)
-        # TODO: fix this function
-        #staves = detect_and_fix_large_gaps(staves)
+        staves = detect_and_fix_large_gaps(staves)
         # Measure processing
         for staff in staves:
             staff.measures = merge_measures(staff.measures)
@@ -585,6 +584,9 @@ def detect_and_fix_large_gaps(staves: Tuple[Staff]):
     for gid, group in enumerate(grouped):
         top = np.average(group[:, 1])
         bottom = np.average(group[:, 3])
+        # sort collection
+        sort_order = np.argsort(group[:,0])
+        group = group[sort_order]
         for idx, measure in enumerate(group):
             if idx == 0:  # check left of the first detection
                 if measure[0] > left_limit + mingap:

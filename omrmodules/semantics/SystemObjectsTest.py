@@ -39,7 +39,7 @@ def process_measuresTest():
          [0.25922823, 0.37479445, 0.41415334, 0.46614403],
          [0.7334418 , 0.37778202, 0.8635829 , 0.46550924]],)
 
-      some_measures = SystemObjects.process_measures(some_measures)
+      some_measures = SystemObjects.merge_measures(some_measures)
 
       assert (np.all(some_measures[1:,0] == some_measures[:-1,2]))
 
