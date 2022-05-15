@@ -2,16 +2,17 @@ from email.mime import image
 import io
 import json
 import os
-
+import flask
+import werkzeug
 import omrmodules
 import torch
 import cv2 as cv
-
+import scipy.misc
 import numpy as np
 from PIL import Image
 from flask import Flask, request
 
-#curl -X POST -F "file=@/Users/abdullahkucuk/input_pic.jpg" http://localhost:5000/predict to send input from terminal
+#curl -X POST -F "file=@/Users/abdullahkucuk/input_pic.jpg" http://localhost:5000/ for send input from terminal
 app = Flask(__name__)
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 MODEL_MEASURE = os.path.join('saved_models', 'muscima_measures.pt')
@@ -33,26 +34,26 @@ def transform_image(image_bytes):
     image = [torch.from_numpy(image).to(device)]
     return image
 
-@app.route('/predict', methods=['POST'])
+@app.route('/', methods = ['GET', 'POST'])
 def predict():
-    try:
-        if request.method == 'POST':
-            file = request.files['file']
-            img_bytes = file.read()
-            image = transform_image(img_bytes)
-            measure_dict = model_measures(image)
-            object_dict = model_objects(image)
-            songFactory = omrmodules.semantics.SystemObjects.SongFactory(image[0], measure_dict[0], object_dict[0])
-            songstring = songFactory.song.toJSON()
-            with open("song.json", "w") as wb:
-                wb.write(songstring)
-            print('done')
-    except:
-        # TODO: the server needs to not fail if literally any function call returns an invalid value or throws an expception
-        # In this case, the server needs to notify the Android app telling the user an exception has occurred. There should
-        # likely be more try and catch clauses included to handle failures at different parts.
+    if request.method == 'POST':
+        file = flask.request.files['image0']
+        filename = werkzeug.utils.secure_filename(file.filename)
+        print("\nReceived image File name : " + file.filename)
+        file.save(filename)
+        f = open(filename, 'rb')
+
+        img_bytes =  f.read()
+        image = transform_image(img_bytes)
+        measure_dict = model_measures(image)
+        object_dict = model_objects(image)
+        songFactory = omrmodules.semantics.SystemObjects.SongFactory(image[0], measure_dict[0], object_dict[0])
+        songstring = songFactory.song.toJSON()
+        with open("song.json", "w") as wb:
+            wb.write(songstring)
+        print('done')
         pass
-    return 'done \n'    
+    return 'Song.json created \n'   
 
 
 if __name__ == '__main__':
