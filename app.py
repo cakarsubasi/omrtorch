@@ -53,7 +53,7 @@ def predict():
             wb.write(songstring)
         print('done')
         pass
-    return 'Song.json created \n'   
+    return songstring 
 
 
 if __name__ == '__main__':
