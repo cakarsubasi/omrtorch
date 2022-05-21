@@ -25,10 +25,15 @@ model_measures.eval()
 model_objects.eval()
 model_measures([torch.rand(1,400,400).to(device)])
 model_objects([torch.rand(1,400,400).to(device)])
+print("preinitilization complete.")
 
 
 def transform_image(image_bytes):
-    decoded = cv.imdecode(np.frombuffer(image_bytes, np.uint8),1)
+    decoded = cv.imdecode(np.frombuffer(image_bytes, np.uint8), 1)
+    #decoded = cv.imdecode(image_bytes, cv.IMREAD_IGNORE_ORIENTATION)
+    if (decoded.shape[1] > decoded.shape[0]):
+        decoded = np.rot90(decoded, k=1, axes=(0,1))
+        print("image rotated")
     image = omrmodules.normalization.preprocess.processnotesheet(decoded)
     image = (np.expand_dims(image, 0) / 255.0).astype(np.float32)
     image = [torch.from_numpy(image).to(device)]
@@ -45,10 +50,14 @@ def predict():
 
         img_bytes =  f.read()
         image = transform_image(img_bytes)
+        print("transform complete")
         measure_dict = model_measures(image)
+        print("measures detected")
         object_dict = model_objects(image)
+        print("objects detected")
         songFactory = omrmodules.semantics.SystemObjects.SongFactory(image[0], measure_dict[0], object_dict[0])
         songstring = songFactory.song.toJSON()
+        print("song constructed")
         with open("song.json", "w") as wb:
             wb.write(songstring)
         print('done')
