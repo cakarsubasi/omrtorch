@@ -376,6 +376,9 @@ class SongFactory():
         self.staves = staves
 
         # get staff boundaries
+        for staff in self.staves:
+            staff._calculateStats()
+            
         boundaries = get_staff_boundaries(
             [staff.stats['center'] for staff in self.staves])
         self.boundaries = boundaries
@@ -591,16 +594,19 @@ def detect_and_fix_large_gaps(staves: Tuple[Staff]):
             if idx == 0:  # check left of the first detection
                 if measure[0] > left_limit + mingap:
                     synth = np.array([left_limit, top, measure[0], bottom])
-                    group = np.vstack([group, synth])
+                    #group = np.vstack([group, synth])
+                    group = np.insert(group, idx+1, axis=0, values=synth)
             if idx == len(group) - 1:  # check right of the last detection
                 if measure[2] < right_limit - mingap:
                     synth = np.array([measure[2], top, right_limit, bottom])
-                    group = np.vstack([group, synth])
+                    #group = np.vstack([group, synth])
+                    group = np.insert(group, idx+1, axis=0, values=synth)
             else:  # check between this detection and the next
                 if group[idx+1][0] - measure[2] > mingap:
                     synth = np.array(
                         [measure[2], top, group[idx+1][0], bottom])
-                    group = np.vstack([group, synth])
+                    #group = np.vstack([group, synth])
+                    group = np.insert(group, idx+1, axis=0, values=synth)
             grouped[gid] = group
 
     for idx in range(len(staves)):
