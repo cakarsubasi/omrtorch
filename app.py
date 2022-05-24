@@ -11,6 +11,7 @@ import scipy.misc
 import numpy as np
 from PIL import Image
 from flask import Flask, request
+import viztools
 
 #curl -X POST -F "file=@/Users/abdullahkucuk/input_pic.jpg" http://localhost:5000/ for send input from terminal
 app = Flask(__name__)
@@ -56,9 +57,19 @@ def predict():
         print("song constructed")
         with open("song.json", "w") as wb:
             wb.write(songstring)
+        #im_preprocessed = viztools.ShowPreProcessedImage(image[0])
+        im_measures = viztools.show_measures(image[0], measure_dict[0])
+        im_noteheads = viztools.show_noteheads(image[0], object_dict[0])
+        im_segments = viztools.show_segments(image[0], songFactory.song)
+        
+        im_measures.save("measures.jpg")
+        im_noteheads.save("noteheads.jpg")
+        im_segments.save("segments.jpg")
+
         print('done')
         pass
     return songstring 
+
 
 
 if __name__ == '__main__':
