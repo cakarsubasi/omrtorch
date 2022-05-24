@@ -30,10 +30,6 @@ print("preinitilization complete.")
 
 def transform_image(image_bytes):
     decoded = cv.imdecode(np.frombuffer(image_bytes, np.uint8), 1)
-    #decoded = cv.imdecode(image_bytes, cv.IMREAD_IGNORE_ORIENTATION)
-    if (decoded.shape[1] > decoded.shape[0]):
-        decoded = np.rot90(decoded, k=1, axes=(0,1))
-        print("image rotated")
     image = omrmodules.normalization.preprocess.processnotesheet(decoded)
     image = (np.expand_dims(image, 0) / 255.0).astype(np.float32)
     image = [torch.from_numpy(image).to(device)]

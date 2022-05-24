@@ -58,7 +58,12 @@ if __name__ == '__main__':
         sample_image = cv.imread(img)
         sample_image = np.average(sample_image, axis=2)
         measure_dict, object_dict = omrengine(sample_image)
-        SongFactory(sample_image, measure_dict, object_dict)
+        song = SongFactory(sample_image, measure_dict, object_dict).song
+
+        filename = f"muscima_{idx}.json"
+        with open(os.path.join("jsons", filename), "w") as wb:
+            wb.write(song.toJSON())
+
         if idx == limit - 1:
             break
   
