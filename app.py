@@ -61,7 +61,7 @@ def predict():
             wb.write(songstring)
         #im_preprocessed = viztools.ShowPreProcessedImage(image[0])
         im_measures = viztools.show_measures(image[0], measure_dict[0])
-        im_noteheads = viztools.show_noteheads(image[0], object_dict[0])
+        im_noteheads = viztools.show_noteheads(image[0], object_dict[0], songFactory.OBJECT_THRESHOLD)
         im_segments = viztools.show_segments(image[0], songFactory.song)
         
         OUTPUT_DIR = "output"
@@ -78,7 +78,6 @@ def predict():
         print('done')
 
     return songstring 
-
 
 
 if __name__ == '__main__':

@@ -25,10 +25,10 @@ def ShowPreProcessedImage(x): return Image.fromarray(ppoToImage(x))
 def show_measures(image, measure_dict):
     return visualize_bboxes(image, measure_dict, threshold=0.75)
 
-def show_noteheads(image, object_dict):
+def show_noteheads(image, object_dict, threshold=0.0):
     label_dict = __pitch_objects__.copy()
     label_dict.insert(0, "__background__")
-    return visualize_bboxes(image, object_dict, label_dict, threshold=0.0)
+    return visualize_bboxes(image, object_dict, label_dict, threshold=threshold)
 
 def show_segments(image, song):
     boxes = []

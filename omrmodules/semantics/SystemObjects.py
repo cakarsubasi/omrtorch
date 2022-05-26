@@ -322,11 +322,13 @@ class SongFactory():
     '''
     Factory for songs
     '''
-
-    MEASURE_THRESHOLD = 0.75
-    OBJECT_THRESHOLD = 0.0
-
-    def __init__(self, image, measuredetections, objectdetections, label_list=None):
+    def __init__(self, 
+                 image, 
+                 measuredetections, 
+                 objectdetections, 
+                 label_list=None,
+                 measure_threshold = 0.75,
+                 object_threshold = 0.50):
 
         self.image = image
         if len(image.shape) == 2:
@@ -337,6 +339,8 @@ class SongFactory():
         self.staves = None
         self.boundaries = None
         self.objects: dict = {}
+        self.MEASURE_THRESHOLD = measure_threshold
+        self.OBJECT_THRESHOLD = object_threshold
 
         if label_list is None:
             label_list = __pitch_objects__
