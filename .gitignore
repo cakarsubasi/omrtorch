@@ -34,3 +34,11 @@ saved_models/.DS_Store
 
 # numpy pickle file
 *.npy
+
+# unwanted sample files
+jsons/
+output/
+*.dictionary
+
+#smude
+smude/
