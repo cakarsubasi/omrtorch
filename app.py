@@ -12,6 +12,8 @@ import numpy as np
 from PIL import Image
 from flask import Flask, request
 import viztools
+import pathlib
+import time
 
 #curl -X POST -F "file=@/Users/abdullahkucuk/input_pic.jpg" http://localhost:5000/ for send input from terminal
 app = Flask(__name__)
@@ -62,12 +64,19 @@ def predict():
         im_noteheads = viztools.show_noteheads(image[0], object_dict[0])
         im_segments = viztools.show_segments(image[0], songFactory.song)
         
-        im_measures.save("measures.jpg")
-        im_noteheads.save("noteheads.jpg")
-        im_segments.save("segments.jpg")
+        OUTPUT_DIR = "output"
+        if not pathlib.Path(OUTPUT_DIR).exists():
+            pathlib.Path(OUTPUT_DIR).mkdir()
+
+        named_tuple = time.localtime()
+        time_string = time.strftime("%Y-%m-%d_%H.%M.%S", named_tuple)
+        
+        im_measures.save (os.path.join(OUTPUT_DIR, f"{time_string}_measures.jpg" ))
+        im_noteheads.save(os.path.join(OUTPUT_DIR, f"{time_string}_noteheads.jpg"))
+        im_segments.save (os.path.join(OUTPUT_DIR, f"{time_string}_segments.jpg" ))
 
         print('done')
-        pass
+
     return songstring 
 
 
