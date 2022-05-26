@@ -33,6 +33,9 @@ model_measures.eval()
 model_objects.eval()
 model_measures([torch.rand(1,400,400).to(device)])
 model_objects([torch.rand(1,400,400).to(device)])
+OUTPUT_DIR = "output"
+if not pathlib.Path(OUTPUT_DIR).exists():
+    pathlib.Path(OUTPUT_DIR).mkdir()
 print("preinitilization complete.")
 
 
@@ -47,10 +50,13 @@ def transform_image(image_bytes):
 def predict():
     if request.method == 'POST':
         file = flask.request.files['image0']
-        filename = werkzeug.utils.secure_filename(file.filename)
+        named_tuple = time.localtime()
+        time_string = time.strftime("%Y-%m-%d_%H.%M.%S", named_tuple)
+
+        filename = werkzeug.utils.secure_filename(f"{time_string}__raw.jpg")
         print("\nReceived image File name : " + file.filename)
-        file.save(filename)
-        f = open(filename, 'rb')
+        file.save(os.path.join(OUTPUT_DIR, filename))
+        f = open(os.path.join(OUTPUT_DIR, filename), 'rb')
 
         img_bytes =  f.read()
         image = transform_image(img_bytes)
@@ -68,13 +74,8 @@ def predict():
         im_measures = viztools.show_measures(image[0], measure_dict[0])
         im_noteheads = viztools.show_noteheads(image[0], object_dict[0], songFactory.OBJECT_THRESHOLD)
         im_segments = viztools.show_segments(image[0], songFactory.song)
-        
-        OUTPUT_DIR = "output"
-        if not pathlib.Path(OUTPUT_DIR).exists():
-            pathlib.Path(OUTPUT_DIR).mkdir()
 
-        named_tuple = time.localtime()
-        time_string = time.strftime("%Y-%m-%d_%H.%M.%S", named_tuple)
+
         
         im_measures.save (os.path.join(OUTPUT_DIR, f"{time_string}_measures.jpg" ))
         im_noteheads.save(os.path.join(OUTPUT_DIR, f"{time_string}_noteheads.jpg"))
