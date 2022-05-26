@@ -42,7 +42,10 @@ print("preinitilization complete.")
 def transform_image(image_bytes):
     decoded = cv.imdecode(np.frombuffer(image_bytes, np.uint8), 1)
     image = omrmodules.normalization.preprocess.processnotesheet(decoded)
-    image = (np.expand_dims(image, 0) / 255.0).astype(np.float32)
+    return image
+
+def convert_to_torch(preprocessed_image):
+    image = (np.expand_dims(preprocessed_image, 0) / 255.0).astype(np.float32)
     image = [torch.from_numpy(image).to(device)]
     return image
 
@@ -54,13 +57,15 @@ def predict():
         named_tuple = time.localtime()
         time_string = time.strftime("%Y-%m-%d_%H.%M.%S", named_tuple)
 
-        filename = werkzeug.utils.secure_filename(f"{time_string}__raw.jpg")
+        filename = werkzeug.utils.secure_filename(f"{time_string}___raw.jpg")
         print("\nReceived image File name : " + file.filename)
         file.save(os.path.join(OUTPUT_DIR, filename))
         f = open(os.path.join(OUTPUT_DIR, filename), 'rb')
 
         img_bytes = f.read()
-        image = transform_image(img_bytes)
+        im_preprocessed = transform_image(img_bytes)
+        print(im_preprocessed.shape)
+        image = convert_to_torch(im_preprocessed)
         print("transform complete")
         measure_dict = model_measures(image)
         print("measures detected")
@@ -73,12 +78,14 @@ def predict():
         with open("song.json", "w") as wb:
             wb.write(songstring)
         #im_preprocessed = viztools.ShowPreProcessedImage(image[0])
+        im_preprocessed = viztools.show_preprocessed(im_preprocessed)
         im_measures = viztools.show_measures(
             image[0], measure_dict[0], songFactory.MEASURE_THRESHOLD)
         im_noteheads = viztools.show_noteheads(
             image[0], object_dict[0], songFactory.OBJECT_THRESHOLD)
         im_segments = viztools.show_segments(image[0], songFactory.song)
 
+        im_preprocessed.save(os.path.join(OUTPUT_DIR, f"{time_string}__preprocessed.jpg"))
         im_measures.save(os.path.join(
             OUTPUT_DIR, f"{time_string}_measures.jpg"))
         im_noteheads.save(os.path.join(

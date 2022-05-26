@@ -18,9 +18,8 @@ def visualize(image, boxes):
 
     return Image.fromarray(np.moveaxis(viz_im_with_bounding_boxes.numpy(), 0, -1))
 
-def ppoToImage(x): return (
-    np.repeat(np.moveaxis(x, 0, 2), 3, 2) * 255).astype(np.uint8)
-def ShowPreProcessedImage(x): return Image.fromarray(ppoToImage(x))
+
+def show_preprocessed(x): return Image.fromarray(x)
 
 def show_measures(image, measure_dict, threshold=0.75):
     return visualize_bboxes(image, measure_dict, threshold=threshold)
