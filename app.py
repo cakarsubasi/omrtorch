@@ -1,4 +1,3 @@
-from email.mime import image
 import io
 import json
 import os
@@ -14,6 +13,7 @@ from flask import Flask, request
 import viztools
 import pathlib
 import time
+import threading
 
 # curl -X POST -F "file=@/Users/abdullahkucuk/input_pic.jpg" http://localhost:5000/ for send input from terminal
 app = Flask(__name__)
@@ -44,10 +44,30 @@ def transform_image(image_bytes):
     image = omrmodules.normalization.preprocess.processnotesheet(decoded)
     return image
 
+
 def convert_to_torch(preprocessed_image):
     image = (np.expand_dims(preprocessed_image, 0) / 255.0).astype(np.float32)
     image = [torch.from_numpy(image).to(device)]
     return image
+
+
+def save_images(time_string, im_preprocessed, image, measure_dict, object_dict, songFactory):
+    im_preprocessed = viztools.show_preprocessed(im_preprocessed)
+    im_measures = viztools.show_measures(
+        image, measure_dict, songFactory.MEASURE_THRESHOLD)
+    im_noteheads = viztools.show_noteheads(
+        image, object_dict, songFactory.OBJECT_THRESHOLD)
+    im_segments = viztools.show_segments(image, songFactory.song)
+
+    im_preprocessed.save(os.path.join(
+        OUTPUT_DIR, f"{time_string}__preprocessed.jpg"))
+    im_measures.save(os.path.join(
+        OUTPUT_DIR, f"{time_string}_measures.jpg"))
+    im_noteheads.save(os.path.join(
+        OUTPUT_DIR, f"{time_string}_noteheads.jpg"))
+    im_segments.save(os.path.join(
+        OUTPUT_DIR, f"{time_string}_segments.jpg"))
+    print("Saved images.")
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -64,7 +84,6 @@ def predict():
 
         img_bytes = f.read()
         im_preprocessed = transform_image(img_bytes)
-        print(im_preprocessed.shape)
         image = convert_to_torch(im_preprocessed)
         print("transform complete")
         measure_dict = model_measures(image)
@@ -72,26 +91,16 @@ def predict():
         object_dict = model_objects(image)
         print("objects detected")
         songFactory = omrmodules.semantics.SystemObjects.SongFactory(
-            image[0], measure_dict[0], object_dict[0], measure_threshold = 0.50, object_threshold = 0.50)
+            image[0], measure_dict[0], object_dict[0], measure_threshold=0.50, object_threshold=0.50)
         songstring = songFactory.song.toJSON()
         print("song constructed")
         with open("song.json", "w") as wb:
             wb.write(songstring)
-        #im_preprocessed = viztools.ShowPreProcessedImage(image[0])
-        im_preprocessed = viztools.show_preprocessed(im_preprocessed)
-        im_measures = viztools.show_measures(
-            image[0], measure_dict[0], songFactory.MEASURE_THRESHOLD)
-        im_noteheads = viztools.show_noteheads(
-            image[0], object_dict[0], songFactory.OBJECT_THRESHOLD)
-        im_segments = viztools.show_segments(image[0], songFactory.song)
 
-        im_preprocessed.save(os.path.join(OUTPUT_DIR, f"{time_string}__preprocessed.jpg"))
-        im_measures.save(os.path.join(
-            OUTPUT_DIR, f"{time_string}_measures.jpg"))
-        im_noteheads.save(os.path.join(
-            OUTPUT_DIR, f"{time_string}_noteheads.jpg"))
-        im_segments.save(os.path.join(
-            OUTPUT_DIR, f"{time_string}_segments.jpg"))
+        # Save asynchronously
+        save_output = threading.Thread(target = save_images,
+            args=(time_string, im_preprocessed, image[0], measure_dict[0], object_dict[0], songFactory))
+        save_output.start()
 
         print('done')
 
