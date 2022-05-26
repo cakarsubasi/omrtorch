@@ -65,10 +65,12 @@ def processnotesheet(image: np.array) -> np.array:
     val_mean = np.mean(vals_in_bin)
     if val_mean == 0:
         print('Could not recognize scale.')
+        return tresh
     # Compute scaling factor from most common interline difference
     scale = pre_scale * ((staff_height / 4) / val_mean)
     if (scale > 7 or scale < 0.2):
         print('Unrealistic scaling factor of {scale}')
+        
 
     # Compute target image size
     h, w = image.shape[:2]

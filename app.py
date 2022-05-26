@@ -17,7 +17,12 @@ import time
 
 #curl -X POST -F "file=@/Users/abdullahkucuk/input_pic.jpg" http://localhost:5000/ for send input from terminal
 app = Flask(__name__)
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+    print("using CUDA")
+else:
+    device = torch.device('cpu')
+    print("using CPU")
 MODEL_MEASURE = os.path.join('saved_models', 'muscima_measures.pt')
 MODEL_OBJECT = os.path.join('saved_models', 'muscima_objects_pitchonly.pt')
 model_measures = torch.load(MODEL_MEASURE, map_location=torch.device('cpu'))
