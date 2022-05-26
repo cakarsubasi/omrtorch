@@ -15,7 +15,7 @@ import viztools
 import pathlib
 import time
 
-#curl -X POST -F "file=@/Users/abdullahkucuk/input_pic.jpg" http://localhost:5000/ for send input from terminal
+# curl -X POST -F "file=@/Users/abdullahkucuk/input_pic.jpg" http://localhost:5000/ for send input from terminal
 app = Flask(__name__)
 if torch.cuda.is_available():
     device = torch.device('cuda')
@@ -31,8 +31,8 @@ model_measures.to(device)
 model_objects.to(device)
 model_measures.eval()
 model_objects.eval()
-model_measures([torch.rand(1,400,400).to(device)])
-model_objects([torch.rand(1,400,400).to(device)])
+model_measures([torch.rand(1, 400, 400).to(device)])
+model_objects([torch.rand(1, 400, 400).to(device)])
 OUTPUT_DIR = "output"
 if not pathlib.Path(OUTPUT_DIR).exists():
     pathlib.Path(OUTPUT_DIR).mkdir()
@@ -46,7 +46,8 @@ def transform_image(image_bytes):
     image = [torch.from_numpy(image).to(device)]
     return image
 
-@app.route('/', methods = ['GET', 'POST'])
+
+@app.route('/', methods=['GET', 'POST'])
 def predict():
     if request.method == 'POST':
         file = flask.request.files['image0']
@@ -58,32 +59,36 @@ def predict():
         file.save(os.path.join(OUTPUT_DIR, filename))
         f = open(os.path.join(OUTPUT_DIR, filename), 'rb')
 
-        img_bytes =  f.read()
+        img_bytes = f.read()
         image = transform_image(img_bytes)
         print("transform complete")
         measure_dict = model_measures(image)
         print("measures detected")
         object_dict = model_objects(image)
         print("objects detected")
-        songFactory = omrmodules.semantics.SystemObjects.SongFactory(image[0], measure_dict[0], object_dict[0])
+        songFactory = omrmodules.semantics.SystemObjects.SongFactory(
+            image[0], measure_dict[0], object_dict[0], measure_threshold = 0.50, object_threshold = 0.50)
         songstring = songFactory.song.toJSON()
         print("song constructed")
         with open("song.json", "w") as wb:
             wb.write(songstring)
         #im_preprocessed = viztools.ShowPreProcessedImage(image[0])
-        im_measures = viztools.show_measures(image[0], measure_dict[0])
-        im_noteheads = viztools.show_noteheads(image[0], object_dict[0], songFactory.OBJECT_THRESHOLD)
+        im_measures = viztools.show_measures(
+            image[0], measure_dict[0], songFactory.MEASURE_THRESHOLD)
+        im_noteheads = viztools.show_noteheads(
+            image[0], object_dict[0], songFactory.OBJECT_THRESHOLD)
         im_segments = viztools.show_segments(image[0], songFactory.song)
 
-
-        
-        im_measures.save (os.path.join(OUTPUT_DIR, f"{time_string}_measures.jpg" ))
-        im_noteheads.save(os.path.join(OUTPUT_DIR, f"{time_string}_noteheads.jpg"))
-        im_segments.save (os.path.join(OUTPUT_DIR, f"{time_string}_segments.jpg" ))
+        im_measures.save(os.path.join(
+            OUTPUT_DIR, f"{time_string}_measures.jpg"))
+        im_noteheads.save(os.path.join(
+            OUTPUT_DIR, f"{time_string}_noteheads.jpg"))
+        im_segments.save(os.path.join(
+            OUTPUT_DIR, f"{time_string}_segments.jpg"))
 
         print('done')
 
-    return songstring 
+    return songstring
 
 
 if __name__ == '__main__':

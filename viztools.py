@@ -22,8 +22,8 @@ def ppoToImage(x): return (
     np.repeat(np.moveaxis(x, 0, 2), 3, 2) * 255).astype(np.uint8)
 def ShowPreProcessedImage(x): return Image.fromarray(ppoToImage(x))
 
-def show_measures(image, measure_dict):
-    return visualize_bboxes(image, measure_dict, threshold=0.75)
+def show_measures(image, measure_dict, threshold=0.75):
+    return visualize_bboxes(image, measure_dict, threshold=threshold)
 
 def show_noteheads(image, object_dict, threshold=0.0):
     label_dict = __pitch_objects__.copy()
