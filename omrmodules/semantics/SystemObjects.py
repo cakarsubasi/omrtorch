@@ -258,11 +258,29 @@ class Song():
 
         Hardcoded for two handed and hardcoded for B-flat key signature
         '''
-        m21soprano = music21.stream.Part()
-        m21bass = music21.stream.Part()
-        kbf = music21.key.KeySignature(-1)
-        for idx, system in enumerate(self.systems):
-            clef = 'gClef' if idx % 2 == 0 else 'fClef'
+        timeSig = 3
+
+        if self.one_handed:
+            m21score = Song._toStreamOneStaff(self.systems, clef = 'fClef', key = 1, timeSig = timeSig)
+        else:
+            tops = [self.systems[idx] for idx in range(len(self.systems)) if idx % 2 == 0]
+            bottoms = [self.systems[idx] for idx in range(len(self.systems)) if idx % 2 == 1]
+        
+            m21soprano = Song._toStreamOneStaff(tops, clef = 'gClef', timeSig = timeSig)
+            m21bass = Song._toStreamOneStaff(bottoms, clef = 'fClef', timeSig = timeSig)
+
+            m21score = music21.stream.Stream([m21soprano, m21bass])
+        
+        m21score.timeSignature = music21.meter.TimeSignature(f'{timeSig}/4')
+        return m21score
+    
+    def _toStreamOneStaff(systems, clef = None, key = 0, timeSig = 4):
+
+        m21stream = music21.stream.Part()
+        keySignature = music21.key.KeySignature(key)
+        if clef is None:
+            clef = 'gClef'
+        for system in systems:
             measures = system.measures
             bot = system.staves[0].getbot()
             gap = system.staves[0].getgap()
@@ -270,13 +288,19 @@ class Song():
             for measure in measures:
                 glyphs = measure.objects
                 relposes = [note.relativePos(bot, gap) for note in glyphs if note.__class__ is SoundObjects.Note]
-                noteSeq = [SoundObjects.getNote(clef, pos) for pos in relposes]
-                noteSeq = _normalizeDurations(noteSeq)
+                noteSeq = []
+                for pos in relposes:
+                    try:
+                        noteSeq.append(SoundObjects.getNote(clef, pos))
+                    except:
+                        pass
+                #noteSeq = [SoundObjects.getNote(clef, pos) for pos in relposes]
+                noteSeq = _normalizeDurations(noteSeq, timeSig)
                 m21measure = music21.stream.Measure(noteSeq)
                 # apply key signature
                 for j in m21measure.recurse().notes:
                     nStep = j.pitch.step
-                    rightAccidental = kbf.accidentalByStep(nStep)
+                    rightAccidental = keySignature.accidentalByStep(nStep)
                     j.pitch.accidental = rightAccidental
                 acc_idx = [idx for idx, glyph in enumerate(
                     glyphs) if glyph.__class__ is SoundObjects.Accidental]
@@ -290,15 +314,9 @@ class Song():
                         elif glyphs[acc].type == 'accidentalNatural':
                             m21measure.notes[acc].pitch.accidental = music21.pitch.Accidental(0)
                 m21staff.append(m21measure)
-            if idx % 2 == 0:
-                m21soprano.append(m21staff)
-            else:
-                m21bass.append(m21staff)
-        m21soprano.keySignature = kbf
-        m21bass.keySignature = kbf
-        m21score = music21.stream.Stream([m21soprano, m21bass])
-
-        return m21score
+            m21stream.append(m21staff)
+        m21stream.keySignature = keySignature
+        return m21stream
 
     def toJSON(self):
         '''
@@ -306,15 +324,23 @@ class Song():
         '''
         return json.dumps(self.toDict())
 
-def _normalizeDurations(notelist):
-    n = len(notelist)
-    if n == 4:
+def _normalizeDurations(notelist, beats = 4):
+    n: int = len(notelist)
+    min: int = n // beats
+    base_duration: int = (pow(2, min-1))
+    # how many pairs will be half the length of base duration
+    pairs: int = n % beats
+    if n == 0:
         pass
-    elif n < 4:
-        notelist[n-1].duration = music21.duration.Duration(5.0-n)
-    elif 9 > n > 4:
-        for i in range((n-4)*2):
-            notelist[-i-1].duration = music21.duration.Duration(0.5)
+    elif n == beats:
+        pass
+    elif n < beats:
+        notelist[n-1].duration = music21.duration.Duration(beats+1.0-n)
+    elif n > beats:
+        for i in range(n):
+            notelist[i].duration = music21.duration.Duration(1.0/base_duration)
+        for i in range(pairs*2):
+            notelist[-i-1].duration = music21.duration.Duration(0.5/base_duration)
     return notelist
 
 
