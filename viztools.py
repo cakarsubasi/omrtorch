@@ -20,7 +20,10 @@ def visualize(image, boxes):
     return Image.fromarray(np.moveaxis(viz_im_with_bounding_boxes.numpy(), 0, -1))
 
 
-def show_preprocessed(x): return Image.fromarray(x)
+def show_preprocessed(x): 
+    image = Image.fromarray(x)
+    image = image.convert("RGB")
+    return image
 
 def show_measures(image, measure_dict, threshold=0.75):
     return visualize_bboxes(image, measure_dict, threshold=threshold)
@@ -48,8 +51,8 @@ def save_images(prefix_string, im_preprocessed, image, measure_dict, object_dict
         image, object_dict, songFactory.OBJECT_THRESHOLD)
     im_segments = show_segments(image, songFactory.song)
 
-    #im_preprocessed.save(os.path.join(
-    #    OUTPUT_DIR, f"{prefix_string}__preprocessed.jpg"))
+    im_preprocessed.save(os.path.join(
+        OUTPUT_DIR, f"{prefix_string}__preprocessed.jpg"))
     im_measures.save(os.path.join(
         OUTPUT_DIR, f"{prefix_string}_measures.jpg"))
     im_noteheads.save(os.path.join(

@@ -68,6 +68,10 @@ def save_images(time_string, im_preprocessed, image, measure_dict, object_dict, 
     im_segments.save(os.path.join(
         OUTPUT_DIR, f"{time_string}_segments.jpg"))
     print("Saved images.")
+    song_stream = songFactory.song.toStream()
+    song_stream.write(fmt = 'musicxml', fp = os.path.join(OUTPUT_DIR, f"{time_string}.musicxml"))
+    print("Exported to musicxml")
+    
 
 
 @app.route('/', methods=['GET', 'POST'])

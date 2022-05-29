@@ -57,7 +57,6 @@ if __name__ == '__main__':
     imgs = sorted(glob.glob(os.path.join(imagepath, '*.png')))
     torch.manual_seed(1)
     indices = torch.randperm(len(imgs)).tolist()
-    print(indices[-40:])
     imgs = [imgs[i] for i in indices[-40:]]
     paths = [pathlib.Path(path) for path in imgs]
 
@@ -82,6 +81,8 @@ if __name__ == '__main__':
         viztools.save_images(filename, sample_image, image, measure_dict, object_dict, factory, OUTPUT_DIR)
         with open(os.path.join(OUTPUT_DIR, f"{filename}.json"), "w") as wb:
             wb.write(song.toJSON())
+        song_stream = factory.song.toStream()
+        song_stream.write(fmt = 'musicxml', fp = os.path.join(OUTPUT_DIR, f"{filename}"))
 
         if idx == limit - 1:
             break
