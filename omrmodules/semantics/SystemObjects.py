@@ -256,9 +256,9 @@ class Song():
         Generate a music21 stream from object
         Get the SystemStaff streams and concat them
 
-        Hardcoded for two handed and hardcoded for B-flat key signature
+        hardcoded for key signature
         '''
-        timeSig = 3
+        timeSig = _guessTimeSignature(self.systems)
 
         if self.one_handed:
             m21score = Song._toStreamOneStaff(self.systems, clef = 'fClef', key = 1, timeSig = timeSig)
@@ -323,6 +323,22 @@ class Song():
         Serialize the song into a JSON string
         '''
         return json.dumps(self.toDict())
+
+def _guessTimeSignature(systems: list[SystemStaff]) -> int:
+    '''
+    Naively guess time signature. Returns either 3 or 4
+    '''
+    threes = 0
+    fours = 0
+    for system in systems:
+        measures = system.measures
+        for measure in measures:
+            notes = len([glyph for glyph in measure.objects if glyph.__class__ is SoundObjects.Note])
+            if notes in [3, 6]:
+                threes = threes + 1
+            elif notes in [2, 4, 8]:
+                fours = fours + 1
+    return 3 if threes > fours else 4
 
 def _normalizeDurations(notelist, beats = 4):
     n: int = len(notelist)
