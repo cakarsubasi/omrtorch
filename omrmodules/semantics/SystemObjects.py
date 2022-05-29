@@ -133,6 +133,7 @@ class SystemStaff():
     Generates Measures and populate them with objects TODO
 
     '''
+
     def __init__(self, staves: Tuple[Staff], yboundaries: np.array, objects: dict = None):
         '''
         staves: staffs that belong to this system
@@ -217,12 +218,11 @@ class Measure():
         return dictionary
 
     def toStream(self, bottom, gap):
-        relpos = lambda y, b, g: round(2*(b - y)/g)
+        def relpos(y, b, g): return round(2*(b - y)/g)
         pose = []
         for obj in self.objects:
             pose.append(relpos(obj.y, bottom, gap))
         return pose
-
 
 
 class Song():
@@ -255,33 +255,37 @@ class Song():
         '''
         Generate a music21 stream from object
         Get the SystemStaff streams and concat them
-
-        hardcoded for key signature
         '''
         timeSig = _guessTimeSignature(self.systems)
+        key = _getKeySignature(self.systems)
 
         if self.one_handed:
             clef = _getClef(self.systems)
             clef = clef if clef != "unknown" else "gClef"
 
-            m21score = Song._toStreamOneStaff(self.systems, clef = clef, key = 1, timeSig = timeSig)
+            m21score = Song._toStreamOneStaff(
+                self.systems, clef=clef, key=key, timeSig=timeSig)
         else:
-            tops = [self.systems[idx] for idx in range(len(self.systems)) if idx % 2 == 0]
-            bottoms = [self.systems[idx] for idx in range(len(self.systems)) if idx % 2 == 1]
+            tops = [self.systems[idx]
+                    for idx in range(len(self.systems)) if idx % 2 == 0]
+            bottoms = [self.systems[idx]
+                       for idx in range(len(self.systems)) if idx % 2 == 1]
             topClef = _getClef(tops)
             bottomClef = _getClef(bottoms)
             topClef = topClef if topClef != "unknown" else "gClef"
             bottomClef = bottomClef if bottomClef != "unknown" else "fClef"
-            
-            m21soprano = Song._toStreamOneStaff(tops, clef = topClef, timeSig = timeSig)
-            m21bass = Song._toStreamOneStaff(bottoms, clef = bottomClef, timeSig = timeSig)
+
+            m21soprano = Song._toStreamOneStaff(
+                tops, clef=topClef, key=key, timeSig=timeSig)
+            m21bass = Song._toStreamOneStaff(
+                bottoms, clef=bottomClef, key=key, timeSig=timeSig)
 
             m21score = music21.stream.Stream([m21soprano, m21bass])
-        
+
         m21score.timeSignature = music21.meter.TimeSignature(f'{timeSig}/4')
         return m21score
-    
-    def _toStreamOneStaff(systems, clef = None, key = 0, timeSig = 4):
+
+    def _toStreamOneStaff(systems, clef=None, key=0, timeSig=4):
 
         m21stream = music21.stream.Part()
         keySignature = music21.key.KeySignature(key)
@@ -294,7 +298,8 @@ class Song():
             m21staff = music21.stream.Stream()
             for measure in measures:
                 glyphs = measure.objects
-                relposes = [note.relativePos(bot, gap) for note in glyphs if note.__class__ is SoundObjects.Note]
+                relposes = [note.relativePos(
+                    bot, gap) for note in glyphs if note.__class__ is SoundObjects.Note]
                 noteSeq = []
                 for pos in relposes:
                     try:
@@ -315,11 +320,14 @@ class Song():
                 for acc in acc_idx:
                     if acc < len(m21measure.notes):
                         if glyphs[acc].type == 'accidentalSharp':
-                            m21measure.notes[acc].pitch.accidental = music21.pitch.Accidental(1)
+                            m21measure.notes[acc].pitch.accidental = music21.pitch.Accidental(
+                                1)
                         elif glyphs[acc].type == 'accidentalFlat':
-                            m21measure.notes[acc].pitch.accidental = music21.pitch.Accidental(-1)
+                            m21measure.notes[acc].pitch.accidental = music21.pitch.Accidental(
+                                -1)
                         elif glyphs[acc].type == 'accidentalNatural':
-                            m21measure.notes[acc].pitch.accidental = music21.pitch.Accidental(0)
+                            m21measure.notes[acc].pitch.accidental = music21.pitch.Accidental(
+                                0)
                 m21staff.append(m21measure)
             m21stream.append(m21staff)
         m21stream.keySignature = keySignature
@@ -331,15 +339,21 @@ class Song():
         '''
         return json.dumps(self.toDict())
 
+
 def _getClef(systems: list[SystemStaff]) -> str:
+    '''
+    Gets the clef by looking at the first measure and counting detections
+    by voting for the most commonly detected clef
+    '''
     first_measures = []
     for system in systems:
         measures = system.measures
         if len(measures) > 0:
             first_measures.append(measures[0])
-    
+
     for measure in first_measures:
-        all_clefs = [glyph for glyph in measure.objects if glyph.__class__ is SoundObjects.Clef]
+        all_clefs = [
+            glyph for glyph in measure.objects if glyph.__class__ is SoundObjects.Clef]
 
     clefs = [0, 0, 0]
     for clef in all_clefs:
@@ -353,7 +367,7 @@ def _getClef(systems: list[SystemStaff]) -> str:
     clefs = np.asarray(clefs)
     if np.max(clefs) == 0:
         return 'unknown'
-    guess = np.argmax(clefs)   
+    guess = np.argmax(clefs)
     if guess == 0:
         return 'gClef'
     elif guess == 1:
@@ -362,9 +376,41 @@ def _getClef(systems: list[SystemStaff]) -> str:
         return 'cClef'
     return "unknown"
 
-def _getKeySignature(systems: list[SystemStaff]) -> int:
 
-    pass
+def _getKeySignature(systems: list[SystemStaff]) -> int:
+    '''
+    Gets the key signature by counting the number of accidentals before the first note in each staff
+    '''
+    
+    first_measures = []
+    for system in systems:
+        measures = system.measures
+        if len(measures) > 0:
+            first_measures.append(measures[0])
+
+    sharps = np.zeros(shape=len(first_measures))
+    flats = np.zeros(shape=len(first_measures))
+
+    for idx, measure in enumerate(first_measures):
+        objects = measure.objects
+
+        for obj in objects:
+            if obj.__class__ == SoundObjects.Note:
+                break
+            elif obj.__class__ == SoundObjects.Accidental:
+                if obj.type == 'accidentalSharp':
+                    sharps[idx] = sharps[idx] + 1
+                elif obj.type == 'accidentalFlat':
+                    flats[idx] = flats[idx] + 1
+    sharps_max =  np.max(sharps).astype(int)
+    flats_max = np.max(flats).astype(int)
+    if sharps_max > flats_max:
+        return sharps_max
+    elif flats_max > sharps_max:
+        return -flats_max
+    else:
+        return 0
+
 
 def _guessTimeSignature(systems: list[SystemStaff]) -> int:
     '''
@@ -377,14 +423,16 @@ def _guessTimeSignature(systems: list[SystemStaff]) -> int:
     for system in systems:
         measures = system.measures
         for measure in measures:
-            notes = len([glyph for glyph in measure.objects if glyph.__class__ is SoundObjects.Note])
+            notes = len(
+                [glyph for glyph in measure.objects if glyph.__class__ is SoundObjects.Note])
             if notes in [3, 6]:
                 threes = threes + 1
             elif notes in [2, 4, 8]:
                 fours = fours + 1
     return 3 if threes > fours else 4
 
-def _normalizeDurations(notelist, beats = 4):
+
+def _normalizeDurations(notelist, beats=4):
     '''
     This method ensures parity in measures without having to infer lengths
     by either extending the length of the last note or halving the length
@@ -405,7 +453,8 @@ def _normalizeDurations(notelist, beats = 4):
         for i in range(n):
             notelist[i].duration = music21.duration.Duration(1.0/base_duration)
         for i in range(pairs*2):
-            notelist[-i-1].duration = music21.duration.Duration(0.5/base_duration)
+            notelist[-i -
+                     1].duration = music21.duration.Duration(0.5/base_duration)
     return notelist
 
 
@@ -413,13 +462,14 @@ class SongFactory():
     '''
     Factory for songs
     '''
-    def __init__(self, 
-                 image, 
-                 measuredetections, 
-                 objectdetections, 
+
+    def __init__(self,
+                 image,
+                 measuredetections,
+                 objectdetections,
                  label_list=None,
-                 measure_threshold = 0.75,
-                 object_threshold = 0.50):
+                 measure_threshold=0.75,
+                 object_threshold=0.50):
 
         self.image = image
         if len(image.shape) == 2:
@@ -460,7 +510,6 @@ class SongFactory():
         self.system_measures = system_measures
         self.staff_measures = staff_measures
 
-
         # Set up staffs
         staves = generate_staffs(self.staff_measures)
         staves = detect_and_fix_large_gaps(staves)
@@ -473,7 +522,7 @@ class SongFactory():
         # get staff boundaries
         for staff in self.staves:
             staff._calculateStats()
-            
+
         boundaries = get_staff_boundaries(
             [staff.stats['center'] for staff in self.staves])
         self.boundaries = boundaries
@@ -683,7 +732,7 @@ def detect_and_fix_large_gaps(staves: Tuple[Staff]):
         top = np.average(group[:, 1])
         bottom = np.average(group[:, 3])
         # sort collection
-        sort_order = np.argsort(group[:,0])
+        sort_order = np.argsort(group[:, 0])
         group = group[sort_order]
         for idx, measure in enumerate(group):
             if idx == 0:  # check left of the first detection
@@ -720,10 +769,10 @@ def is_one_handed(system_measures, staff_measures):
     # Mandatory assumption
     if system_measures.size <= 1 or staff_measures.size <= 1:
         return True
-    
-    system_height = np.average(system_measures[:,3]-system_measures[:,1])
-    staff_height = np.average(staff_measures[:,3]-staff_measures[:,1])
-    # 
+
+    system_height = np.average(system_measures[:, 3]-system_measures[:, 1])
+    staff_height = np.average(staff_measures[:, 3]-staff_measures[:, 1])
+    #
     if staff_height*1.25 > system_height:
         return True
 
