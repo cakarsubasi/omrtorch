@@ -69,9 +69,10 @@ def processnotesheet(image: np.array) -> np.array:
     # Compute scaling factor from most common interline difference
     scale = pre_scale * ((staff_height / 4) / val_mean)
     if (scale > 7 or scale < 0.2):
-        print('Unrealistic scaling factor of {scale}')
+        print(f'Unrealistic scaling factor of {scale}')
+        return tresh
         
-
+    
     # Compute target image size
     h, w = image.shape[:2]
     
@@ -82,6 +83,10 @@ def processnotesheet(image: np.array) -> np.array:
         scaled = cv2.resize(tresh, (dst_w, dst_h), scale, interpolation=cv2.INTER_CUBIC)
     else:
         scaled = pyramid_reduce(tresh, 1 / scale, preserve_range=True).astype(np.uint8)
+    
+    # Ignore very good images
+    if abs(rotation) < 0.05:
+        return scaled    
 
     M = cv2.getRotationMatrix2D((dst_w//2, dst_h//2), rotation, 1)
     rotated = cv2.warpAffine(scaled, M, (dst_w, dst_h), borderMode=cv2.BORDER_CONSTANT)

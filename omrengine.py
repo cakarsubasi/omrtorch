@@ -5,6 +5,8 @@ import torch
 import cv2 as cv
 import glob
 from PIL import Image
+import pathlib
+import viztools
 
 from omrmodules.semantics.SystemObjects import SongFactory
 
@@ -47,28 +49,42 @@ class OMREngine():
 # Test the extractor on muscima, the extractor should
 # get through the entire dataset without crashing
 if __name__ == '__main__':
+    OUTPUT_DIR = "output_muscima"
+    if not pathlib.Path(OUTPUT_DIR).exists():
+        pathlib.Path(OUTPUT_DIR).mkdir()
+
     imagepath = os.path.join('muscima/v2.0/data/images')
     imgs = sorted(glob.glob(os.path.join(imagepath, '*.png')))
+    torch.manual_seed(1)
+    indices = torch.randperm(len(imgs)).tolist()
+    print(indices[-40:])
+    imgs = [imgs[i] for i in indices[-40:]]
+    paths = [pathlib.Path(path) for path in imgs]
+
     omrengine = OMREngine()
     imagenum = len(imgs)
     limit = imagenum
 
-    for idx, img in enumerate(imgs):
+    
+    for idx, path in enumerate(paths):
         print(f"Processing {idx+1}/{limit}")
-        sample_image = cv.imread(img)
+        sample_image = cv.imread(path.__str__())
         sample_image = np.average(sample_image, axis=2)
         measure_dict, object_dict = omrengine(sample_image)
-        song = SongFactory(sample_image, measure_dict, object_dict).song
-
-        filename = f"muscima_{idx}.json"
-        with open(os.path.join("jsons", filename), "w") as wb:
+        factory = SongFactory(sample_image, measure_dict, object_dict)
+        song = factory.song
+        image = np.expand_dims(sample_image, 0)
+        image = torch.asarray(image).type(torch.FloatTensor)
+        if torch.max(image) > 2:
+            image = image / 255.0
+        filename = path.stem
+        
+        viztools.save_images(filename, sample_image, image, measure_dict, object_dict, factory, OUTPUT_DIR)
+        with open(os.path.join(OUTPUT_DIR, f"{filename}.json"), "w") as wb:
             wb.write(song.toJSON())
 
         if idx == limit - 1:
             break
   
-    
-    
-    #omrengine(sample_image)
 
     pass

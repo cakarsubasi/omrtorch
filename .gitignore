@@ -38,6 +38,7 @@ saved_models/.DS_Store
 # unwanted sample files
 jsons/
 output/
+output_muscima/
 *.dictionary
 
 #smude

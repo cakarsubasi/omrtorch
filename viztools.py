@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from PIL import Image
 from torchvision.utils import draw_bounding_boxes
+import os
 
 from omrmodules.datasets.MuscimaObjects import __pitch_objects__
 from omrmodules.semantics.SystemObjects import SongFactory, denormalize_bboxes
@@ -38,3 +39,21 @@ def show_segments(image, song):
 
 def save_image(image : Image, name):
     image.save(name)
+
+def save_images(prefix_string, im_preprocessed, image, measure_dict, object_dict, songFactory, OUTPUT_DIR):
+    im_preprocessed = show_preprocessed(im_preprocessed)
+    im_measures = show_measures(
+        image, measure_dict, songFactory.MEASURE_THRESHOLD)
+    im_noteheads = show_noteheads(
+        image, object_dict, songFactory.OBJECT_THRESHOLD)
+    im_segments = show_segments(image, songFactory.song)
+
+    #im_preprocessed.save(os.path.join(
+    #    OUTPUT_DIR, f"{prefix_string}__preprocessed.jpg"))
+    im_measures.save(os.path.join(
+        OUTPUT_DIR, f"{prefix_string}_measures.jpg"))
+    im_noteheads.save(os.path.join(
+        OUTPUT_DIR, f"{prefix_string}_noteheads.jpg"))
+    im_segments.save(os.path.join(
+        OUTPUT_DIR, f"{prefix_string}_segments.jpg"))
+    print("Saved images.")
