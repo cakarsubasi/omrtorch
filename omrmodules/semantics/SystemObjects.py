@@ -261,13 +261,20 @@ class Song():
         timeSig = _guessTimeSignature(self.systems)
 
         if self.one_handed:
-            m21score = Song._toStreamOneStaff(self.systems, clef = 'fClef', key = 1, timeSig = timeSig)
+            clef = _getClef(self.systems)
+            clef = clef if clef != "unknown" else "gClef"
+
+            m21score = Song._toStreamOneStaff(self.systems, clef = clef, key = 1, timeSig = timeSig)
         else:
             tops = [self.systems[idx] for idx in range(len(self.systems)) if idx % 2 == 0]
             bottoms = [self.systems[idx] for idx in range(len(self.systems)) if idx % 2 == 1]
-        
-            m21soprano = Song._toStreamOneStaff(tops, clef = 'gClef', timeSig = timeSig)
-            m21bass = Song._toStreamOneStaff(bottoms, clef = 'fClef', timeSig = timeSig)
+            topClef = _getClef(tops)
+            bottomClef = _getClef(bottoms)
+            topClef = topClef if topClef != "unknown" else "gClef"
+            bottomClef = bottomClef if bottomClef != "unknown" else "fClef"
+            
+            m21soprano = Song._toStreamOneStaff(tops, clef = topClef, timeSig = timeSig)
+            m21bass = Song._toStreamOneStaff(bottoms, clef = bottomClef, timeSig = timeSig)
 
             m21score = music21.stream.Stream([m21soprano, m21bass])
         
@@ -324,9 +331,46 @@ class Song():
         '''
         return json.dumps(self.toDict())
 
+def _getClef(systems: list[SystemStaff]) -> str:
+    first_measures = []
+    for system in systems:
+        measures = system.measures
+        if len(measures) > 0:
+            first_measures.append(measures[0])
+    
+    for measure in first_measures:
+        all_clefs = [glyph for glyph in measure.objects if glyph.__class__ is SoundObjects.Clef]
+
+    clefs = [0, 0, 0]
+    for clef in all_clefs:
+        if clef.type == 'gClef':
+            clefs[0] = clefs[0] + 1
+        elif clef.type == 'fClef':
+            clefs[1] = clefs[1] + 1
+        elif clef.type == 'cClef':
+            clefs[2] = clefs[2] + 1
+
+    clefs = np.asarray(clefs)
+    if np.max(clefs) == 0:
+        return 'unknown'
+    guess = np.argmax(clefs)   
+    if guess == 0:
+        return 'gClef'
+    elif guess == 1:
+        return 'fClef'
+    elif guess == 2:
+        return 'cClef'
+    return "unknown"
+
+def _getKeySignature(systems: list[SystemStaff]) -> int:
+
+    pass
+
 def _guessTimeSignature(systems: list[SystemStaff]) -> int:
     '''
     Naively guess time signature. Returns either 3 or 4
+
+    @param systems: list of systems
     '''
     threes = 0
     fours = 0
@@ -341,6 +385,11 @@ def _guessTimeSignature(systems: list[SystemStaff]) -> int:
     return 3 if threes > fours else 4
 
 def _normalizeDurations(notelist, beats = 4):
+    '''
+    This method ensures parity in measures without having to infer lengths
+    by either extending the length of the last note or halving the length
+    of every note starting from the last until the total length adds up to beats
+    '''
     n: int = len(notelist)
     min: int = n // beats
     base_duration: int = (pow(2, min-1))
